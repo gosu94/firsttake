@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nano Banana Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --ink: #1a1c26;
+            --paper: #f8f3e8;
+            --banana: #ffd25a;
+            --leaf: #2f5d50;
+            --shadow: rgba(15, 20, 30, 0.12);
+            --accent: #f26f3a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Newsreader", serif;
+            color: var(--ink);
+            background: radial-gradient(circle at top left, #fff7d2 0%, #f8f3e8 45%, #f1e4d5 100%);
+            min-height: 100vh;
+        }
+
+        .page {
+            padding: 48px 20px 72px;
+            display: grid;
+            gap: 32px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            animation: rise 0.6s ease-out;
+        }
+
+        h1 {
+            font-family: "Space Grotesk", sans-serif;
+            font-size: clamp(2rem, 3vw, 3.2rem);
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            margin: 0;
+            max-width: 680px;
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.78);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 18px 40px var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(6px);
+        }
+
+        label {
+            font-family: "Space Grotesk", sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        textarea,
+        select,
+        input[type="number"] {
+            width: 100%;
+            border-radius: 14px;
+            border: 1px solid rgba(26, 28, 38, 0.15);
+            padding: 12px 14px;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 0.95rem;
+            background: #fffdf9;
+        }
+
+        textarea {
+            min-height: 140px;
+            resize: vertical;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            border: none;
+            background: linear-gradient(135deg, var(--banana), var(--accent));
+            color: var(--ink);
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 12px 22px;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 12px 25px rgba(242, 111, 58, 0.25);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 30px rgba(242, 111, 58, 0.3);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(47, 93, 80, 0.12);
+            color: var(--leaf);
+            font-family: "Space Grotesk", sans-serif;
+            font-weight: 600;
+        }
+
+        .error {
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: rgba(242, 111, 58, 0.18);
+            color: #7a2a10;
+            font-family: "Space Grotesk", sans-serif;
+            font-weight: 600;
+        }
+
+        .gallery {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            margin-top: 16px;
+        }
+
+        .gallery img {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid rgba(26, 28, 38, 0.1);
+            box-shadow: 0 14px 30px rgba(15, 20, 30, 0.12);
+        }
+
+        .description {
+            margin-top: 12px;
+            font-size: 0.95rem;
+            color: rgba(26, 28, 38, 0.75);
+        }
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <header>
+        <span class="badge">Nano Banana Studio</span>
+        <h1>Generate crisp, cinematic stills from a single prompt.</h1>
+        <p>Use the fal.ai Nano Banana text-to-image model to create images with precise aspect ratios and formats. Generated images appear right away.</p>
+    </header>
+
+    <div class="grid">
+        <section class="card">
+            <form th:action="@{/nano-banana}" method="post" th:object="${form}">
+                <div>
+                    <label for="prompt">Prompt</label>
+                    <textarea id="prompt" th:field="*{prompt}" placeholder="Describe the scene, style, lighting, and subject."></textarea>
+                </div>
+
+                <div class="row" style="margin-top: 18px;">
+                    <div>
+                        <label for="aspectRatio">Aspect ratio</label>
+                        <select id="aspectRatio" th:field="*{aspectRatio}">
+                            <option th:each="ratio : ${aspectRatios}" th:value="${ratio}" th:text="${ratio}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="outputFormat">Output format</label>
+                        <select id="outputFormat" th:field="*{outputFormat}">
+                            <option th:each="fmt : ${outputFormats}" th:value="${fmt}" th:text="${fmt}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="numImages">Number of images</label>
+                        <input id="numImages" type="number" min="1" max="4" th:field="*{numImages}" />
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button type="submit">Generate image</button>
+                </div>
+            </form>
+
+            <div th:if="${error}" class="error" style="margin-top: 16px;" th:text="${error}"></div>
+        </section>
+
+        <section class="card">
+            <h2 style="font-family: 'Space Grotesk', sans-serif; margin-top: 0;">Results</h2>
+            <p style="margin-top: 4px;">Your generated images will appear here.</p>
+
+            <div th:if="${result}">
+                <div class="gallery" th:if="${result.imageUrls}">
+                    <img th:each="imgUrl : ${result.imageUrls}" th:src="${imgUrl}" alt="Generated image" />
+                </div>
+                <p class="description" th:if="${result.description}" th:text="${result.description}"></p>
+            </div>
+        </section>
+    </div>
+</div>
+</body>
+</html>
