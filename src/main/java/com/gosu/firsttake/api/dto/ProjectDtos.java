@@ -14,6 +14,7 @@ public final class ProjectDtos {
         String tone,
         String narratorVoice,
         String narratorVoicePrompt,
+        String visualStylePrompt,
         Instant createdAt,
         Instant updatedAt
     ) {
@@ -26,6 +27,7 @@ public final class ProjectDtos {
         String tone,
         String narratorVoice,
         String narratorVoicePrompt,
+        String visualStylePrompt,
         Instant createdAt,
         Instant updatedAt,
         List<BeatDetail> beats

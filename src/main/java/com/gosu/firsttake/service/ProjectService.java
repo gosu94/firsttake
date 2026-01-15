@@ -103,6 +103,7 @@ public class ProjectService {
         project.setTone(request.tone());
         project.setNarratorVoice(request.narratorVoice());
         project.setNarratorVoicePrompt(request.narratorVoicePrompt());
+        project.setVisualStylePrompt(request.visualStylePrompt());
         projectRepository.save(project);
         return toSummary(project);
     }
@@ -124,6 +125,9 @@ public class ProjectService {
         }
         if (request.narratorVoicePrompt() != null) {
             project.setNarratorVoicePrompt(request.narratorVoicePrompt());
+        }
+        if (request.visualStylePrompt() != null) {
+            project.setVisualStylePrompt(request.visualStylePrompt());
         }
         projectRepository.save(project);
         return toSummary(project);
@@ -194,6 +198,9 @@ public class ProjectService {
         if (request.narratorVoicePrompt() != null) {
             project.setNarratorVoicePrompt(request.narratorVoicePrompt());
         }
+        if (request.visualStylePrompt() != null) {
+            project.setVisualStylePrompt(request.visualStylePrompt());
+        }
         projectRepository.save(project);
 
         String prompt = buildScriptPrompt(project, request.beatCount());
@@ -257,7 +264,7 @@ public class ProjectService {
             }
             if (beat.scenePrompt() != null && !beat.scenePrompt().isBlank()) {
                 futures.add(CompletableFuture.supplyAsync(
-                    () -> toResult(beat.id(), generateSceneAsset(beat, aspectRatio)),
+                    () -> toResult(beat.id(), generateSceneAsset(beat, aspectRatio, project.getVisualStylePrompt())),
                     aiExecutor
                 ).handle((result, ex) -> handleAssetFailure(result, ex, beat.id(), beat.sceneType() == SceneType.IMAGE ? AssetType.IMAGE : AssetType.VIDEO)));
             }
@@ -331,13 +338,14 @@ public class ProjectService {
         return new GeneratedAssetResult(first.id(), asset);
     }
 
-    private GeneratedAsset generateSceneAsset(BeatSnapshot beat, String aspectRatio) {
+    private GeneratedAsset generateSceneAsset(BeatSnapshot beat, String aspectRatio, String visualStylePrompt) {
         if (beat.scenePrompt() == null || beat.scenePrompt().isBlank()) {
             return null;
         }
+        String combinedPrompt = applyVisualStyle(beat.scenePrompt(), visualStylePrompt);
         if (beat.sceneType() == SceneType.VIDEO) {
             Veo3FastRequest request = new Veo3FastRequest();
-            request.setPrompt(beat.scenePrompt());
+            request.setPrompt(combinedPrompt);
             request.setGenerateAudio(false);
             if (aspectRatio != null && !aspectRatio.isBlank()) {
                 request.setAspectRatio(aspectRatio);
@@ -355,7 +363,7 @@ public class ProjectService {
         }
 
         NanoBananaForm form = new NanoBananaForm();
-        form.setPrompt(beat.scenePrompt());
+        form.setPrompt(combinedPrompt);
         if (aspectRatio != null && !aspectRatio.isBlank()) {
             form.setAspectRatio(aspectRatio);
         }
@@ -386,6 +394,7 @@ public class ProjectService {
             project.getTone(),
             project.getNarratorVoice(),
             project.getNarratorVoicePrompt(),
+            project.getVisualStylePrompt(),
             project.getCreatedAt(),
             project.getUpdatedAt()
         );
@@ -399,6 +408,7 @@ public class ProjectService {
             project.getTone(),
             project.getNarratorVoice(),
             project.getNarratorVoicePrompt(),
+            project.getVisualStylePrompt(),
             project.getCreatedAt(),
             project.getUpdatedAt(),
             beats
@@ -576,6 +586,13 @@ public class ProjectService {
     private String toDataUrl(String mimeType, byte[] data) {
         String encoded = Base64.getEncoder().encodeToString(data);
         return "data:" + mimeType + ";base64," + encoded;
+    }
+
+    private String applyVisualStyle(String scenePrompt, String visualStylePrompt) {
+        if (visualStylePrompt == null || visualStylePrompt.isBlank()) {
+            return scenePrompt;
+        }
+        return scenePrompt + "\nStyle: " + visualStylePrompt.trim();
     }
 
     private record ScriptBeat(String sentence, String scenePrompt) {

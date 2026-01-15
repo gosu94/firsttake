@@ -29,6 +29,7 @@ type ProjectSummary = {
     tone?: string;
     narratorVoice?: string;
     narratorVoicePrompt?: string;
+    visualStylePrompt?: string;
 };
 
 type ProjectDetail = {
@@ -38,6 +39,7 @@ type ProjectDetail = {
     tone?: string;
     narratorVoice?: string;
     narratorVoicePrompt?: string;
+    visualStylePrompt?: string;
     beats: Beat[];
 };
 
@@ -61,6 +63,7 @@ export default function Page() {
     const [tone, setTone] = useState('professional');
     const [narrator, setNarrator] = useState('alloy');
     const [narratorPrompt, setNarratorPrompt] = useState('');
+    const [visualStylePrompt, setVisualStylePrompt] = useState('');
     const [format, setFormat] = useState('16:9');
     const [duration, setDuration] = useState('30s');
     const [ctaStyle, setCtaStyle] = useState('soft');
@@ -102,6 +105,7 @@ export default function Page() {
         setTone(detail.tone ?? 'professional');
         setNarrator(detail.narratorVoice ?? 'alloy');
         setNarratorPrompt(detail.narratorVoicePrompt ?? '');
+        setVisualStylePrompt(detail.visualStylePrompt ?? '');
         setBeats(detail.beats ?? []);
     };
 
@@ -117,6 +121,7 @@ export default function Page() {
                 tone: updates.tone,
                 narratorVoice: updates.narratorVoice,
                 narratorVoicePrompt: updates.narratorVoicePrompt,
+                visualStylePrompt: updates.visualStylePrompt,
             }),
         });
     };
@@ -154,6 +159,7 @@ export default function Page() {
                     tone,
                     narratorVoice: narrator,
                     narratorVoicePrompt: narratorPrompt,
+                    visualStylePrompt,
                 }),
             });
             setBeats(result);
@@ -185,6 +191,7 @@ export default function Page() {
     };
 
     const shouldAnimate = animationKey > 0;
+    const hasAssets = beats.some((beat) => beat.assets && beat.assets.length > 0);
 
     return (
         <div className="min-h-screen bg-gray-800 blueprint-grid" data-oid="sn:jvm8">
@@ -362,6 +369,20 @@ export default function Page() {
                             />
                         </div>
 
+                        <div data-oid="visual-style-prompt">
+                            <label className="block text-gray-300 text-sm font-medium mb-2">
+                                Visual Style Prompt
+                            </label>
+                            <textarea
+                                value={visualStylePrompt}
+                                onChange={(e) => setVisualStylePrompt(e.target.value)}
+                                onBlur={() => updateProject({ visualStylePrompt })}
+                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                rows={2}
+                                placeholder="e.g., cinematic lighting, high contrast, 35mm film"
+                            />
+                        </div>
+
                         <div className="flex space-x-4" data-oid="7hdd9jq">
                             <div className="flex-1" data-oid="j-b63zj">
                                 <label
@@ -486,21 +507,7 @@ export default function Page() {
                         <h2 className="text-white text-xl font-semibold" data-oid="ik41s-8">
                             Script Timeline
                         </h2>
-                        {projectLoaded && (
-                            <a
-                                className="text-sm text-blue-200 hover:text-white"
-                                href={`/api/projects/${projectId}/export.zip`}
-                                data-oid="download-zip"
-                            >
-                                Download ZIP
-                            </a>
-                        )}
                     </div>
-                    {isGeneratingAssets && (
-                        <div className="progress-track mb-4" data-oid="progress-line">
-                            <div className="progress-line"></div>
-                        </div>
-                    )}
 
                     {isLoading ? (
                         <div className="text-gray-200">Loading project...</div>
@@ -527,7 +534,7 @@ export default function Page() {
                                                 data-oid="2ru5:cv"
                                             ></div>
 
-                                        <div className="w-[44%] pr-12" data-oid="_4c6a4t">
+                                        <div className="w-[42%] pr-12" data-oid="_4c6a4t">
                                             <textarea
                                                 value={item.scriptSentence ?? ''}
                                                 onChange={(e) =>
@@ -560,7 +567,7 @@ export default function Page() {
                                                 )}
                                             </div>
 
-                                        <div className="w-[44%] pl-14" data-oid="eb_nnht">
+                                        <div className="w-[38%] pl-16 ml-auto" data-oid="eb_nnht">
                                             <div
                                                 className="bg-gray-700/80 border border-gray-500 rounded-lg p-3 max-w-[280px]"
                                                 data-oid="ch93ky."
@@ -712,15 +719,31 @@ export default function Page() {
                         </div>
                     )}
 
-                    <div className="mt-auto pt-6 flex justify-center" data-oid="9alignl">
-                        <button
-                            onClick={handleGenerateAssets}
-                            disabled={!projectLoaded || isGeneratingAssets}
-                            className="bg-gradient-to-r from-blue-800 to-blue-900 hover:from-blue-900 hover:to-blue-950 text-white font-semibold py-4 px-8 rounded-full transition-all duration-200 shadow-2xl hover:shadow-3xl hover:scale-105 disabled:opacity-60"
-                            data-oid="l:e4:9b"
-                        >
-                            {isGeneratingAssets ? 'Generating...' : 'Generate Assets'}
-                        </button>
+                    <div className="mt-auto pt-6 flex flex-col items-center gap-3" data-oid="9alignl">
+                        {isGeneratingAssets && (
+                            <div className="progress-track w-48" data-oid="progress-line">
+                                <div className="progress-line"></div>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={handleGenerateAssets}
+                                disabled={!projectLoaded || isGeneratingAssets}
+                                className="bg-gradient-to-r from-blue-800 to-blue-900 hover:from-blue-900 hover:to-blue-950 text-white font-semibold py-4 px-8 rounded-full transition-all duration-200 shadow-2xl hover:shadow-3xl hover:scale-105 disabled:opacity-60"
+                                data-oid="l:e4:9b"
+                            >
+                                {isGeneratingAssets ? 'Generating...' : 'Generate Assets'}
+                            </button>
+                            {projectLoaded && hasAssets && (
+                                <a
+                                    className="bg-white/10 border border-white/20 text-white px-4 py-2 rounded-full text-sm hover:bg-white/20 transition-colors"
+                                    href={`/api/projects/${projectId}/export.zip`}
+                                    data-oid="download-zip"
+                                >
+                                    Download ZIP
+                                </a>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -9,7 +9,8 @@ public final class ProjectRequests {
         String generalPrompt,
         String tone,
         String narratorVoice,
-        String narratorVoicePrompt
+        String narratorVoicePrompt,
+        String visualStylePrompt
     ) {
     }
 
@@ -18,7 +19,8 @@ public final class ProjectRequests {
         String generalPrompt,
         String tone,
         String narratorVoice,
-        String narratorVoicePrompt
+        String narratorVoicePrompt,
+        String visualStylePrompt
     ) {
     }
 
@@ -45,6 +47,7 @@ public final class ProjectRequests {
         String tone,
         String narratorVoice,
         String narratorVoicePrompt,
+        String visualStylePrompt,
         Integer beatCount
     ) {
     }

@@ -37,6 +37,9 @@ public class Project {
     @Column(columnDefinition = "TEXT")
     private String narratorVoicePrompt;
 
+    @Column(columnDefinition = "TEXT")
+    private String visualStylePrompt;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -113,6 +116,14 @@ public class Project {
 
     public void setNarratorVoicePrompt(String narratorVoicePrompt) {
         this.narratorVoicePrompt = narratorVoicePrompt;
+    }
+
+    public String getVisualStylePrompt() {
+        return visualStylePrompt;
+    }
+
+    public void setVisualStylePrompt(String visualStylePrompt) {
+        this.visualStylePrompt = visualStylePrompt;
     }
 
     public Instant getCreatedAt() {
