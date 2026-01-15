@@ -36,3 +36,7 @@ out/
 
 ### VS Code ###
 .vscode/
+/frontend/.next
+/frontend/node_modules
+/src/main/resources/static/
+

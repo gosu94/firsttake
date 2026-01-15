@@ -1,55 +1,193 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-type ScriptItem = {
+type Asset = {
     id: number;
-    script: string;
-    prompt: string;
-    type: 'video' | 'image';
-    selected: boolean;
+    assetType: 'AUDIO' | 'IMAGE' | 'VIDEO';
+    url: string;
+    provider?: string;
+    mimeType?: string;
+    durationSeconds?: number;
+    createdAt?: string;
+};
+
+type Beat = {
+    id: number;
+    orderIndex: number;
+    scriptSentence: string;
+    scenePrompt: string;
+    sceneType: 'IMAGE' | 'VIDEO';
+    selectedForGeneration: boolean;
+    assets: Asset[];
+};
+
+type ProjectSummary = {
+    id: number;
+    name: string;
+    generalPrompt?: string;
+    tone?: string;
+    narratorVoice?: string;
+    narratorVoicePrompt?: string;
+};
+
+type ProjectDetail = {
+    id: number;
+    name: string;
+    generalPrompt?: string;
+    tone?: string;
+    narratorVoice?: string;
+    narratorVoicePrompt?: string;
+    beats: Beat[];
+};
+
+const fetchJson = async <T,>(url: string, options?: RequestInit): Promise<T> => {
+    const response = await fetch(url, {
+        headers: {
+            'Content-Type': 'application/json',
+            ...(options?.headers ?? {}),
+        },
+        ...options,
+    });
+    if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Request failed: ${response.status}`);
+    }
+    return response.json() as Promise<T>;
 };
 
 export default function Page() {
     const [prompt, setPrompt] = useState('');
     const [tone, setTone] = useState('professional');
-    const [narrator, setNarrator] = useState('Aloy');
+    const [narrator, setNarrator] = useState('alloy');
+    const [narratorPrompt, setNarratorPrompt] = useState('');
     const [format, setFormat] = useState('16:9');
     const [duration, setDuration] = useState('30s');
     const [ctaStyle, setCtaStyle] = useState('soft');
-    const [scriptItems, setScriptItems] = useState<ScriptItem[]>([
-        {
-            id: 1,
-            script: 'Welcome to our revolutionary product that will change your life forever.',
-            prompt: 'Modern office space with sleek technology, professional lighting',
-            type: 'video',
-            selected: true,
-        },
-        {
-            id: 2,
-            script: 'Experience the difference with our cutting-edge technology.',
-            prompt: 'Close-up of hands using futuristic device, clean white background',
-            type: 'image',
-            selected: true,
-        },
-        {
-            id: 3,
-            script: 'Join thousands of satisfied customers today.',
-            prompt: 'Happy diverse group of people smiling, bright outdoor setting',
-            type: 'video',
-            selected: false,
-        },
-    ]);
+    const [projectId, setProjectId] = useState<number | null>(null);
+    const [beats, setBeats] = useState<Beat[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+    const [isGeneratingAssets, setIsGeneratingAssets] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [animationKey, setAnimationKey] = useState(0);
 
-    const updateScriptItem = <K extends keyof ScriptItem>(id: number, field: K, value: ScriptItem[K]) => {
-        setScriptItems((items) =>
-            items.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    const projectLoaded = useMemo(() => projectId !== null, [projectId]);
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                setIsLoading(true);
+                const projects = await fetchJson<ProjectSummary[]>('/api/projects');
+                if (projects.length === 0) {
+                    setProjectId(null);
+                    setBeats([]);
+                    return;
+                }
+                const first = projects[0];
+                setProjectId(first.id);
+                await loadProject(first.id);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to load project.');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        void load();
+    }, []);
+
+    const loadProject = async (id: number) => {
+        const detail = await fetchJson<ProjectDetail>(`/api/projects/${id}`);
+        setPrompt(detail.generalPrompt ?? '');
+        setTone(detail.tone ?? 'professional');
+        setNarrator(detail.narratorVoice ?? 'alloy');
+        setNarratorPrompt(detail.narratorVoicePrompt ?? '');
+        setBeats(detail.beats ?? []);
+    };
+
+    const updateProject = async (updates: Partial<ProjectDetail>) => {
+        if (!projectLoaded) {
+            return;
+        }
+        await fetchJson<ProjectSummary>(`/api/projects/${projectId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                name: updates.name,
+                generalPrompt: updates.generalPrompt,
+                tone: updates.tone,
+                narratorVoice: updates.narratorVoice,
+                narratorVoicePrompt: updates.narratorVoicePrompt,
+            }),
+        });
+    };
+
+    const updateBeat = async (beatId: number, updates: Partial<Beat>) => {
+        await fetchJson<Beat>(`/api/beats/${beatId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                orderIndex: updates.orderIndex,
+                scriptSentence: updates.scriptSentence,
+                scenePrompt: updates.scenePrompt,
+                sceneType: updates.sceneType,
+                selectedForGeneration: updates.selectedForGeneration,
+            }),
+        });
+    };
+
+    const updateBeatLocal = (beatId: number, updates: Partial<Beat>) => {
+        setBeats((items) =>
+            items.map((item) => (item.id === beatId ? { ...item, ...updates } : item)),
         );
     };
 
+    const handleGenerateScript = async () => {
+        if (!projectLoaded) {
+            return;
+        }
+        setIsGeneratingScript(true);
+        setError(null);
+        try {
+            const result = await fetchJson<Beat[]>(`/api/projects/${projectId}/generate-script`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    generalPrompt: prompt,
+                    tone,
+                    narratorVoice: narrator,
+                    narratorVoicePrompt: narratorPrompt,
+                }),
+            });
+            setBeats(result);
+            setAnimationKey((prev) => prev + 1);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to generate script.');
+        } finally {
+            setIsGeneratingScript(false);
+        }
+    };
+
+    const handleGenerateAssets = async () => {
+        if (!projectLoaded) {
+            return;
+        }
+        setIsGeneratingAssets(true);
+        setError(null);
+        try {
+            const result = await fetchJson<Beat[]>(`/api/projects/${projectId}/generate-assets`, {
+                method: 'POST',
+                body: JSON.stringify({ aspectRatio: format }),
+            });
+            setBeats(result);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to generate assets.');
+        } finally {
+            setIsGeneratingAssets(false);
+        }
+    };
+
+    const shouldAnimate = animationKey > 0;
+
     return (
         <div className="min-h-screen bg-gray-800 blueprint-grid" data-oid="sn:jvm8">
-            {/* Navbar */}
             <nav
                 className="bg-black/80 backdrop-blur-sm border-b border-gray-700 px-6 py-4 flex justify-between items-center"
                 data-oid=":949wnf"
@@ -109,10 +247,9 @@ export default function Page() {
                 </div>
             </nav>
 
-            <div className="flex h-[calc(100vh-80px)] p-6 gap-6" data-oid="_0-3vjy">
-                {/* Left Control Panel */}
+            <div className="flex min-h-[calc(100vh-80px)] p-6 gap-6" data-oid="_0-3vjy">
                 <div
-                    className="w-1/3 bg-black/90 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700 h-[841px]"
+                    className="w-1/3 bg-black/90 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700"
                     data-oid="5_ab5.k"
                 >
                     <h2 className="text-white text-xl font-semibold mb-6" data-oid="inwpe9-">
@@ -120,7 +257,6 @@ export default function Page() {
                     </h2>
 
                     <div className="space-y-6" data-oid="v:51w37">
-                        {/* General Prompt */}
                         <div data-oid="v4inihj">
                             <label
                                 className="block text-gray-300 text-sm font-medium mb-2"
@@ -131,6 +267,7 @@ export default function Page() {
                             <textarea
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
+                                onBlur={() => updateProject({ generalPrompt: prompt })}
                                 className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                                 rows={4}
                                 placeholder="Describe your ad concept..."
@@ -138,7 +275,6 @@ export default function Page() {
                             />
                         </div>
 
-                        {/* Tone and Narrator Voice Row */}
                         <div className="flex space-x-4" data-oid="httpjw3">
                             <div className="flex-1" data-oid="zakf9wn">
                                 <label
@@ -149,7 +285,10 @@ export default function Page() {
                                 </label>
                                 <select
                                     value={tone}
-                                    onChange={(e) => setTone(e.target.value)}
+                                    onChange={(e) => {
+                                        setTone(e.target.value);
+                                        void updateProject({ tone: e.target.value });
+                                    }}
                                     className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     data-oid="m46yds3"
                                 >
@@ -183,30 +322,46 @@ export default function Page() {
                                 </label>
                                 <select
                                     value={narrator}
-                                    onChange={(e) => setNarrator(e.target.value)}
+                                    onChange={(e) => {
+                                        setNarrator(e.target.value);
+                                        void updateProject({ narratorVoice: e.target.value });
+                                    }}
                                     className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     data-oid="7-perv3"
                                 >
-                                    <option value="Aloy" data-oid="-xdsib9">
-                                        Aloy
+                                    <option value="alloy" data-oid="-xdsib9">
+                                        Alloy
                                     </option>
-                                    <option value="Chris" data-oid="esgmxv_">
-                                        Chris
+                                    <option value="fable" data-oid="esgmxv_">
+                                        Fable
                                     </option>
-                                    <option value="Sarah" data-oid="329eh.o">
-                                        Sarah
+                                    <option value="nova" data-oid="329eh.o">
+                                        Nova
                                     </option>
-                                    <option value="Marcus" data-oid="h-pmmbf">
-                                        Marcus
+                                    <option value="onyx" data-oid="h-pmmbf">
+                                        Onyx
                                     </option>
-                                    <option value="Emma" data-oid="5ogdaaf">
-                                        Emma
+                                    <option value="shimmer" data-oid="5ogdaaf">
+                                        Shimmer
                                     </option>
                                 </select>
                             </div>
                         </div>
 
-                        {/* Time Duration and CTA Style Row */}
+                        <div data-oid="narrator-prompt">
+                            <label className="block text-gray-300 text-sm font-medium mb-2">
+                                Narrator Voice Prompt
+                            </label>
+                            <textarea
+                                value={narratorPrompt}
+                                onChange={(e) => setNarratorPrompt(e.target.value)}
+                                onBlur={() => updateProject({ narratorVoicePrompt: narratorPrompt })}
+                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                rows={2}
+                                placeholder="e.g., warm, energetic, confident"
+                            />
+                        </div>
+
                         <div className="flex space-x-4" data-oid="7hdd9jq">
                             <div className="flex-1" data-oid="j-b63zj">
                                 <label
@@ -265,7 +420,6 @@ export default function Page() {
                             </div>
                         </div>
 
-                        {/* Format Selection */}
                         <div data-oid="2e4ba0y">
                             <label
                                 className="block text-gray-300 text-sm font-medium mb-2"
@@ -307,185 +461,265 @@ export default function Page() {
                             </div>
                         </div>
 
-                        {/* Generate Script Button */}
                         <button
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                            onClick={handleGenerateScript}
+                            disabled={!projectLoaded || isGeneratingScript}
+                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-60"
                             data-oid="qx5-qx1"
                         >
-                            Generate Script
+                            {isGeneratingScript ? 'Generating...' : 'Generate Script'}
                         </button>
+
+                        {error && (
+                            <div className="text-red-300 text-sm" data-oid="error">
+                                {error}
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Right Output Panel */}
                 <div
-                    className="flex-1 bg-gray-600/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-500 relative w-[983px]"
+                    className="flex-1 bg-gray-600/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-500 w-[983px] flex flex-col min-h-0"
                     data-oid="adq0q6s"
                 >
-                    <h2
-                        className="text-white text-xl font-semibold mb-8 text-center"
-                        data-oid="ik41s-8"
-                    >
-                        Script Timeline
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-white text-xl font-semibold" data-oid="ik41s-8">
+                            Script Timeline
+                        </h2>
+                        {projectLoaded && (
+                            <a
+                                className="text-sm text-blue-200 hover:text-white"
+                                href={`/api/projects/${projectId}/export.zip`}
+                                data-oid="download-zip"
+                            >
+                                Download ZIP
+                            </a>
+                        )}
+                    </div>
+                    {isGeneratingAssets && (
+                        <div className="progress-track mb-4" data-oid="progress-line">
+                            <div className="progress-line"></div>
+                        </div>
+                    )}
 
-                    {/* Timeline */}
-                    <div className="relative" data-oid="uuqdw6e">
-                        {/* Vertical line */}
-                        <div
-                            className="absolute left-1/2 transform -translate-x-0.5 w-0.5 bg-white/30 h-full"
-                            data-oid="o2sp6h3"
-                        ></div>
-
-                        <div className="space-y-6" data-oid="z:ev92q">
-                            {scriptItems.map((item, index) => (
+                    {isLoading ? (
+                        <div className="text-gray-200">Loading project...</div>
+                    ) : (
+                        <div className="flex-1 min-h-0 overflow-y-auto pr-2" data-oid="timeline-scroll">
+                            <div key={animationKey} className="relative" data-oid="uuqdw6e">
                                 <div
-                                    key={item.id}
-                                    className="relative flex items-center"
-                                    data-oid="9ofvvzi"
-                                >
-                                    {/* Timeline point */}
-                                    <div
-                                        className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full border-4 border-gray-600 z-10"
-                                        data-oid="2ru5:cv"
-                                    ></div>
+                                    className={`absolute left-1/2 transform -translate-x-0.5 w-0.5 bg-white/30 top-0 bottom-0 ${shouldAnimate ? 'timeline-reveal' : ''}`}
+                                    data-oid="o2sp6h3"
+                                ></div>
 
-                                    {/* Left side - Script */}
-                                    <div className="w-[45%] pr-8" data-oid="_4c6a4t">
-                                        <textarea
-                                            value={item.script}
-                                            onChange={(e) =>
-                                                updateScriptItem(item.id, 'script', e.target.value)
-                                            }
-                                            className="w-full bg-gray-700/80 border border-gray-500 rounded-lg px-3 py-2 text-white text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            rows={2}
-                                            data-oid="b7:ppa4"
-                                        />
-                                    </div>
-
-                                    {/* Right side - Visual Prompt */}
-                                    <div className="w-[45%] pl-12" data-oid="eb_nnht">
+                                <div className="space-y-6" data-oid="z:ev92q">
+                                    {beats.map((item, index) => (
                                         <div
-                                            className="bg-gray-700/80 border border-gray-500 rounded-lg p-3"
-                                            data-oid="ch93ky."
+                                            key={item.id}
+                                            className={`relative flex items-start ${shouldAnimate ? 'beat-reveal' : ''}`}
+                                            style={
+                                                shouldAnimate ? { animationDelay: `${index * 120}ms` } : undefined
+                                            }
+                                            data-oid="9ofvvzi"
                                         >
-                                            <textarea
-                                                value={item.prompt}
-                                                onChange={(e) =>
-                                                    updateScriptItem(
-                                                        item.id,
-                                                        'prompt',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2"
-                                                rows={1}
-                                                data-oid="qygv_f3"
-                                            />
-
                                             <div
-                                                className="flex items-center justify-between"
-                                                data-oid="whb5y5n"
+                                                className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full border-4 border-gray-600 z-10"
+                                                data-oid="2ru5:cv"
+                                            ></div>
+
+                                        <div className="w-[44%] pr-12" data-oid="_4c6a4t">
+                                            <textarea
+                                                value={item.scriptSentence ?? ''}
+                                                onChange={(e) =>
+                                                    updateBeatLocal(item.id, {
+                                                        scriptSentence: e.target.value,
+                                                    })
+                                                }
+                                                    onBlur={(e) =>
+                                                        void updateBeat(item.id, {
+                                                            scriptSentence: e.target.value,
+                                                        })
+                                                    }
+                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[96px]"
+                                                    rows={3}
+                                                    data-oid="b7:ppa4"
+                                                />
+                                                {item.assets && item.assets.length > 0 && (
+                                                    <div className="mt-3 space-y-2">
+                                                        {item.assets
+                                                            .filter((asset) => asset.assetType === 'AUDIO')
+                                                            .map((asset) => (
+                                                                <audio
+                                                                    key={asset.id}
+                                                                    controls
+                                                                    src={asset.url}
+                                                                    className="w-full"
+                                                                />
+                                                            ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                        <div className="w-[44%] pl-14" data-oid="eb_nnht">
+                                            <div
+                                                className="bg-gray-700/80 border border-gray-500 rounded-lg p-3 max-w-[280px]"
+                                                data-oid="ch93ky."
                                             >
-                                                <div
-                                                    className="flex items-center space-x-2"
-                                                    data-oid="pm:s-l."
-                                                >
-                                                    {/* Image/Video toggle */}
-                                                    <button
-                                                        onClick={() =>
-                                                            updateScriptItem(
-                                                                item.id,
-                                                                'type',
-                                                                'image',
-                                                            )
-                                                        }
-                                                        className={`p-2 rounded ${item.type === 'image' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300'} transition-colors`}
-                                                        data-oid="xala_yd"
+                                                <textarea
+                                                    value={item.scenePrompt ?? ''}
+                                                    onChange={(e) =>
+                                                        updateBeatLocal(item.id, {
+                                                            scenePrompt: e.target.value,
+                                                        })
+                                                    }
+                                                    onBlur={(e) =>
+                                                        void updateBeat(item.id, {
+                                                            scenePrompt: e.target.value,
+                                                        })
+                                                    }
+                                                    className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2 min-h-[80px]"
+                                                    rows={2}
+                                                    data-oid="qygv_f3"
+                                                />
+
+                                                    <div
+                                                        className="flex items-center justify-between"
+                                                        data-oid="whb5y5n"
                                                     >
-                                                        <svg
-                                                            className="w-4 h-4"
-                                                            fill="currentColor"
-                                                            viewBox="0 0 20 20"
-                                                            data-oid="hcx6m:8"
+                                                        <div
+                                                            className="flex items-center space-x-2"
+                                                            data-oid="pm:s-l."
                                                         >
-                                                            <path
-                                                                fillRule="evenodd"
-                                                                d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                                                                clipRule="evenodd"
-                                                                data-oid="tcta3yx"
-                                                            />
-                                                        </svg>
-                                                    </button>
-                                                    <button
-                                                        onClick={() =>
-                                                            updateScriptItem(
-                                                                item.id,
-                                                                'type',
-                                                                'video',
-                                                            )
-                                                        }
-                                                        className={`p-2 rounded ${item.type === 'video' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300'} transition-colors`}
-                                                        data-oid="kts976j"
-                                                    >
-                                                        <svg
-                                                            className="w-4 h-4"
-                                                            fill="currentColor"
-                                                            viewBox="0 0 20 20"
-                                                            data-oid="gdb.qwi"
+                                                            <button
+                                                                onClick={() => {
+                                                                    updateBeatLocal(item.id, {
+                                                                        sceneType: 'IMAGE',
+                                                                    });
+                                                                    void updateBeat(item.id, {
+                                                                        sceneType: 'IMAGE',
+                                                                    });
+                                                                }}
+                                                                className={`p-2 rounded ${item.sceneType === 'IMAGE' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300'} transition-colors`}
+                                                                data-oid="xala_yd"
+                                                            >
+                                                                <svg
+                                                                    className="w-4 h-4"
+                                                                    fill="currentColor"
+                                                                    viewBox="0 0 20 20"
+                                                                    data-oid="hcx6m:8"
+                                                                >
+                                                                    <path
+                                                                        fillRule="evenodd"
+                                                                        d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                                                                        clipRule="evenodd"
+                                                                        data-oid="tcta3yx"
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    updateBeatLocal(item.id, {
+                                                                        sceneType: 'VIDEO',
+                                                                    });
+                                                                    void updateBeat(item.id, {
+                                                                        sceneType: 'VIDEO',
+                                                                    });
+                                                                }}
+                                                                className={`p-2 rounded ${item.sceneType === 'VIDEO' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300'} transition-colors`}
+                                                                data-oid="kts976j"
+                                                            >
+                                                                <svg
+                                                                    className="w-4 h-4"
+                                                                    fill="currentColor"
+                                                                    viewBox="0 0 20 20"
+                                                                    data-oid="gdb.qwi"
+                                                                >
+                                                                    <path
+                                                                        d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"
+                                                                        data-oid="sg-p0wq"
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+
+                                                        <label
+                                                            className="flex items-center"
+                                                            data-oid="ju:z5n_"
                                                         >
-                                                            <path
-                                                                d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"
-                                                                data-oid="sg-p0wq"
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={item.selectedForGeneration}
+                                                                onChange={(e) => {
+                                                                    updateBeatLocal(item.id, {
+                                                                        selectedForGeneration: e.target.checked,
+                                                                    });
+                                                                    void updateBeat(item.id, {
+                                                                        selectedForGeneration: e.target.checked,
+                                                                    });
+                                                                }}
+                                                                className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                                                                data-oid="9f.ebmx"
                                                             />
-                                                        </svg>
-                                                    </button>
+
+                                                            <span
+                                                                className="ml-2 text-sm text-gray-300"
+                                                                data-oid="se:a9jt"
+                                                            >
+                                                                Generate
+                                                            </span>
+                                                        </label>
+                                                    </div>
                                                 </div>
 
-                                                {/* Checkbox */}
-                                                <label
-                                                    className="flex items-center"
-                                                    data-oid="ju:z5n_"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={item.selected}
-                                                        onChange={(e) =>
-                                                            updateScriptItem(
-                                                                item.id,
-                                                                'selected',
-                                                                e.target.checked,
+                                                {item.assets && item.assets.length > 0 && (
+                                                    <div className="mt-3 space-y-2 max-w-[280px]">
+                                                        {item.assets
+                                                            .filter(
+                                                                (asset) =>
+                                                                    asset.assetType === 'IMAGE' ||
+                                                                    asset.assetType === 'VIDEO',
                                                             )
-                                                        }
-                                                        className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
-                                                        data-oid="9f.ebmx"
-                                                    />
-
-                                                    <span
-                                                        className="ml-2 text-sm text-gray-300"
-                                                        data-oid="se:a9jt"
-                                                    >
-                                                        Generate
-                                                    </span>
-                                                </label>
+                                                            .map((asset) => {
+                                                                if (asset.assetType === 'IMAGE') {
+                                                                    return (
+                                                                        <img
+                                                                            key={asset.id}
+                                                                            src={asset.url}
+                                                                            alt="Generated scene"
+                                                                            className="w-full rounded transition-transform duration-200 ease-out hover:scale-110 hover:z-10"
+                                                                        />
+                                                                    );
+                                                                }
+                                                                if (asset.assetType === 'VIDEO') {
+                                                                    return (
+                                                                        <video
+                                                                            key={asset.id}
+                                                                            controls
+                                                                            src={asset.url}
+                                                                            className="w-full rounded transition-transform duration-200 ease-out hover:scale-110 hover:z-10"
+                                                                        />
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            })}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* Generate Button */}
-                    <div
-                        className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-                        data-oid="9alignl"
-                    >
+                    <div className="mt-auto pt-6 flex justify-center" data-oid="9alignl">
                         <button
-                            className="bg-gradient-to-r from-blue-800 to-blue-900 hover:from-blue-900 hover:to-blue-950 text-white font-semibold py-4 px-8 rounded-full transition-all duration-200 shadow-2xl hover:shadow-3xl hover:scale-105"
+                            onClick={handleGenerateAssets}
+                            disabled={!projectLoaded || isGeneratingAssets}
+                            className="bg-gradient-to-r from-blue-800 to-blue-900 hover:from-blue-900 hover:to-blue-950 text-white font-semibold py-4 px-8 rounded-full transition-all duration-200 shadow-2xl hover:shadow-3xl hover:scale-105 disabled:opacity-60"
                             data-oid="l:e4:9b"
                         >
-                            Generate Assets
+                            {isGeneratingAssets ? 'Generating...' : 'Generate Assets'}
                         </button>
                     </div>
                 </div>

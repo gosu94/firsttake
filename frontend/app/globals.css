@@ -78,12 +78,88 @@
         @apply border-border;
     }
     body {
-        @apply bg-background text-foreground;
+        @apply text-foreground;
+        background-color: #1f2937;
+        min-height: 100%;
     }
 }
+
+html {
+    background-color: #1f2937;
+    min-height: 100%;
+}
+
 .blueprint-grid {
     background-image:
         linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
     background-size: 40px 40px;
+}
+
+.timeline-reveal {
+    animation: timeline-drop 0.6s ease-out both;
+    transform-origin: top;
+}
+
+.progress-track {
+    height: 2px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 40%;
+    background: rgba(255, 255, 255, 0.85);
+    animation: progress-sweep 1.2s ease-in-out infinite;
+}
+
+@keyframes progress-sweep {
+    0% {
+        transform: translateX(-60%);
+    }
+    50% {
+        transform: translateX(60%);
+    }
+    100% {
+        transform: translateX(-60%);
+    }
+}
+
+.beat-reveal {
+    animation: beat-fade-in 0.5s ease-out both;
+}
+
+@keyframes timeline-drop {
+    from {
+        transform: translateX(-50%) scaleY(0);
+        opacity: 0.2;
+    }
+    to {
+        transform: translateX(-50%) scaleY(1);
+        opacity: 1;
+    }
+}
+
+@keyframes beat-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .timeline-reveal,
+    .beat-reveal {
+        animation: none;
+    }
 }
