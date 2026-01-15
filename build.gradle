@@ -27,18 +27,101 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-h2console'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'ai.fal.client:fal-client:0.7.1'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-thymeleaf-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+def frontendDir = "${projectDir}/frontend"
+def frontendOutDir = "${frontendDir}/out"
+def staticResourcesDir = "${projectDir}/src/main/resources/static"
+def shouldBuildFrontend = !project.hasProperty('skipFrontendBuild')
+def os = org.gradle.internal.os.OperatingSystem.current()
+def yarnExecutable = os.isMacOsX()
+		? "${System.properties['user.home']}/.homebrew/bin/yarn"
+		: "yarn"
+
+tasks.register('yarnInstallFrontend', Exec) {
+	group = 'build'
+	description = 'Installs frontend dependencies'
+	workingDir = file(frontendDir)
+	commandLine yarnExecutable, 'install', '--frozen-lockfile'
+	onlyIf { shouldBuildFrontend }
+}
+
+// Second task: yarn build
+tasks.register('yarnBuildFrontend', Exec) {
+	group = 'build'
+	description = 'Builds the Next.js frontend'
+	workingDir = file(frontendDir)
+	commandLine yarnExecutable, 'build'
+	onlyIf { shouldBuildFrontend }
+	dependsOn 'yarnInstallFrontend'
+}
+
+// Optional wrapper task to keep the old name
+tasks.register('buildFrontendApp') {
+	group = 'build'
+	description = 'Installs dependencies and builds the Next.js frontend'
+	dependsOn 'yarnBuildFrontend'
+	onlyIf { shouldBuildFrontend }
+}
+
+tasks.named('buildFrontendApp') {
+	mustRunAfter 'cleanFrontendStatic'
+}
+
+tasks.register('cleanFrontendStatic') {
+	group = 'build'
+	description = 'Removes previous exported frontend files from the static directory'
+	onlyIf { shouldBuildFrontend }
+	doLast {
+		def staticDir = file(staticResourcesDir)
+		if (!staticDir.exists()) {
+			return
+		}
+		staticDir.eachFile { file ->
+			if (file.isDirectory() && (file.name == 'icons' || file.name == 'images' || file.name == 'ffmpeg')) {
+				return
+			}
+			delete(file)
+		}
+	}
+}
+
+tasks.register('copyFrontendBuild', Copy) {
+	group = 'build'
+	description = 'Copies the exported Next.js build into Spring Boot static resources'
+	dependsOn 'buildFrontendApp', 'cleanFrontendStatic'
+	from(frontendOutDir)
+	into(staticResourcesDir)
+	onlyIf { shouldBuildFrontend }
+}
+tasks.named('copyFrontendBuild') {
+	mustRunAfter 'buildFrontendApp'
+}
+
+tasks.register('prepareFrontendAssets') {
+	group = 'build'
+	description = 'Cleans, builds, and copies the Next.js export into Spring static resources'
+	dependsOn 'cleanFrontendStatic', 'buildFrontendApp', 'copyFrontendBuild'
+	onlyIf { shouldBuildFrontend }
+}
+
+if (shouldBuildFrontend) {
+	tasks.named('processResources') {
+		dependsOn 'copyFrontendBuild'
+	}
+	tasks.named('bootJar') {
+		dependsOn 'prepareFrontendAssets'
+	}
 }

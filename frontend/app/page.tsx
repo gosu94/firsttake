@@ -2,6 +2,14 @@
 
 import { useState } from 'react';
 
+type ScriptItem = {
+    id: number;
+    script: string;
+    prompt: string;
+    type: 'video' | 'image';
+    selected: boolean;
+};
+
 export default function Page() {
     const [prompt, setPrompt] = useState('');
     const [tone, setTone] = useState('professional');
@@ -9,7 +17,7 @@ export default function Page() {
     const [format, setFormat] = useState('16:9');
     const [duration, setDuration] = useState('30s');
     const [ctaStyle, setCtaStyle] = useState('soft');
-    const [scriptItems, setScriptItems] = useState([
+    const [scriptItems, setScriptItems] = useState<ScriptItem[]>([
         {
             id: 1,
             script: 'Welcome to our revolutionary product that will change your life forever.',
@@ -33,7 +41,7 @@ export default function Page() {
         },
     ]);
 
-    const updateScriptItem = (id, field, value) => {
+    const updateScriptItem = <K extends keyof ScriptItem>(id: number, field: K, value: ScriptItem[K]) => {
         setScriptItems((items) =>
             items.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
         );
@@ -124,7 +132,7 @@ export default function Page() {
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                rows="4"
+                                rows={4}
                                 placeholder="Describe your ad concept..."
                                 data-oid="t4hqnd2"
                             />
@@ -350,7 +358,7 @@ export default function Page() {
                                                 updateScriptItem(item.id, 'script', e.target.value)
                                             }
                                             className="w-full bg-gray-700/80 border border-gray-500 rounded-lg px-3 py-2 text-white text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            rows="2"
+                                            rows={2}
                                             data-oid="b7:ppa4"
                                         />
                                     </div>
@@ -371,7 +379,7 @@ export default function Page() {
                                                     )
                                                 }
                                                 className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2"
-                                                rows="1"
+                                                rows={1}
                                                 data-oid="qygv_f3"
                                             />
 
