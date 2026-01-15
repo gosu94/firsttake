@@ -3,3 +3,7 @@ spring:
     name: firsttake
   thymeleaf:
     enabled: false
+
+openai:
+  tts:
+    model: gpt-4o-mini-tts
