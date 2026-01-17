@@ -48,7 +48,8 @@ public final class ProjectRequests {
         String narratorVoice,
         String narratorVoicePrompt,
         String visualStylePrompt,
-        Integer beatCount
+        Integer beatCount,
+        Integer durationSeconds
     ) {
     }
 

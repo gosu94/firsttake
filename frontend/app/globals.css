@@ -90,10 +90,29 @@ html {
 }
 
 .blueprint-grid {
+    background-color: #070b16;
     background-image:
-        linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-    background-size: 40px 40px;
+        radial-gradient(1200px 800px at 10% -10%, rgba(120, 170, 255, 0.15), transparent 60%),
+        radial-gradient(900px 700px at 90% 0%, rgba(255, 120, 200, 0.12), transparent 55%),
+        radial-gradient(700px 600px at 50% 100%, rgba(70, 120, 255, 0.12), transparent 60%),
+        radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.6), transparent 2px),
+        radial-gradient(1px 1px at 30% 80%, rgba(255, 255, 255, 0.5), transparent 2px),
+        radial-gradient(1px 1px at 60% 30%, rgba(255, 255, 255, 0.5), transparent 2px),
+        radial-gradient(1px 1px at 80% 70%, rgba(255, 255, 255, 0.55), transparent 2px),
+        radial-gradient(1px 1px at 20% 60%, rgba(255, 255, 255, 0.4), transparent 2px),
+        radial-gradient(1px 1px at 75% 40%, rgba(255, 255, 255, 0.45), transparent 2px),
+        radial-gradient(1px 1px at 15% 15%, rgba(255, 255, 255, 0.5), transparent 2px),
+        radial-gradient(1px 1px at 45% 55%, rgba(255, 255, 255, 0.45), transparent 2px),
+        radial-gradient(1px 1px at 55% 75%, rgba(255, 255, 255, 0.5), transparent 2px),
+        radial-gradient(1px 1px at 85% 25%, rgba(255, 255, 255, 0.55), transparent 2px),
+        radial-gradient(1px 1px at 5% 85%, rgba(255, 255, 255, 0.4), transparent 2px),
+        radial-gradient(1px 1px at 95% 60%, rgba(255, 255, 255, 0.45), transparent 2px),
+        radial-gradient(1px 1px at 35% 10%, rgba(255, 255, 255, 0.5), transparent 2px),
+        radial-gradient(1px 1px at 65% 5%, rgba(255, 255, 255, 0.45), transparent 2px),
+        radial-gradient(1px 1px at 25% 45%, rgba(255, 255, 255, 0.4), transparent 2px),
+        radial-gradient(1px 1px at 70% 90%, rgba(255, 255, 255, 0.55), transparent 2px),
+        radial-gradient(1px 1px at 90% 85%, rgba(255, 255, 255, 0.45), transparent 2px);
+    background-size: auto;
 }
 
 .timeline-reveal {

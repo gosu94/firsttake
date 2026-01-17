@@ -203,7 +203,7 @@ public class ProjectService {
         }
         projectRepository.save(project);
 
-        String prompt = buildScriptPrompt(project, request.beatCount());
+        String prompt = buildScriptPrompt(project, request.beatCount(), request.durationSeconds());
         OpenRouterRequest openRouterRequest = new OpenRouterRequest();
         openRouterRequest.setPrompt(prompt);
         openRouterRequest.setTemperature(0.7);
@@ -469,12 +469,24 @@ public class ProjectService {
         return SceneType.valueOf(normalized);
     }
 
-    private String buildScriptPrompt(Project project, Integer beatCount) {
-        int count = beatCount != null && beatCount > 0 ? beatCount : 6;
+    private String buildScriptPrompt(Project project, Integer beatCount, Integer durationSeconds) {
+        Integer resolvedDuration = durationSeconds != null && durationSeconds > 0 ? durationSeconds : null;
+        int count;
+        if (beatCount != null && beatCount > 0) {
+            count = beatCount;
+        } else if (resolvedDuration != null) {
+            count = Math.max(2, (int) Math.round(resolvedDuration / 5.0));
+        } else {
+            count = 6;
+        }
         StringBuilder builder = new StringBuilder();
         builder.append("Generate an ad script as JSON only. Return a JSON array of objects.\n");
         builder.append("Each object must have fields: sentence, scenePrompt.\n");
         builder.append("Number of beats: ").append(count).append(".\n");
+        if (resolvedDuration != null) {
+            builder.append("Target narration duration: ").append(resolvedDuration).append(" seconds.\n");
+            builder.append("Aim for the full script to read in about that duration.\n");
+        }
         if (project.getTone() != null && !project.getTone().isBlank()) {
             builder.append("Tone: ").append(project.getTone()).append(".\n");
         }

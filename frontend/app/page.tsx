@@ -226,6 +226,7 @@ export default function Page() {
         setIsGeneratingScript(true);
         setError(null);
         try {
+            const durationSeconds = Number.parseInt(duration, 10);
             const result = await fetchJson<Beat[]>(`/api/projects/${projectId}/generate-script`, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -234,6 +235,7 @@ export default function Page() {
                     narratorVoice: narrator,
                     narratorVoicePrompt: narratorPrompt,
                     visualStylePrompt,
+                    durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : null,
                 }),
             });
             setBeats(result);
@@ -840,14 +842,6 @@ export default function Page() {
                                                 className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full border-4 border-gray-600 z-10"
                                                 data-oid="2ru5:cv"
                                             ></div>
-                                            <button
-                                                type="button"
-                                                onClick={() => insertBeatAt(item.orderIndex + 1)}
-                                                className="timeline-plus top-full mt-2"
-                                                aria-label="Add beat below"
-                                            >
-                                                +
-                                            </button>
 
                                         <div className="w-full lg:w-[42%] lg:pr-12" data-oid="_4c6a4t">
                                             <textarea
