@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -30,7 +29,6 @@ import java.util.zip.ZipOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -39,21 +37,18 @@ public class ExportService {
     private final ProjectRepository projectRepository;
     private final TimelineBeatRepository beatRepository;
     private final GeneratedAssetRepository assetRepository;
-    private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     public ExportService(
         DefaultUserService defaultUserService,
         ProjectRepository projectRepository,
         TimelineBeatRepository beatRepository,
-        GeneratedAssetRepository assetRepository,
-        ObjectMapper objectMapper
+        GeneratedAssetRepository assetRepository
     ) {
         this.defaultUserService = defaultUserService;
         this.projectRepository = projectRepository;
         this.beatRepository = beatRepository;
         this.assetRepository = assetRepository;
-        this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
@@ -74,7 +69,6 @@ public class ExportService {
         response.setHeader("Content-Disposition", "attachment; filename=\"project-" + projectId + ".zip\"");
 
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(response.getOutputStream())) {
-            writeManifest(zipOutputStream, project, beats, assetsByBeat);
             for (TimelineBeat beat : beats) {
                 List<GeneratedAsset> beatAssets = assetsByBeat.getOrDefault(beat.getId(), List.of());
                 for (GeneratedAsset asset : beatAssets) {
@@ -83,55 +77,6 @@ public class ExportService {
             }
             zipOutputStream.finish();
         }
-    }
-
-    private void writeManifest(
-        ZipOutputStream zipOutputStream,
-        Project project,
-        List<TimelineBeat> beats,
-        Map<Long, List<GeneratedAsset>> assetsByBeat
-    ) throws IOException {
-        Map<String, Object> manifest = new LinkedHashMap<>();
-        Map<String, Object> projectInfo = new LinkedHashMap<>();
-        projectInfo.put("id", project.getId());
-        projectInfo.put("name", project.getName());
-        projectInfo.put("generalPrompt", project.getGeneralPrompt());
-        projectInfo.put("tone", project.getTone());
-        projectInfo.put("narratorVoice", project.getNarratorVoice());
-        manifest.put("project", projectInfo);
-
-        List<Map<String, Object>> beatEntries = new ArrayList<>();
-        for (TimelineBeat beat : beats) {
-            Map<String, Object> beatInfo = new LinkedHashMap<>();
-            beatInfo.put("id", beat.getId());
-            beatInfo.put("orderIndex", beat.getOrderIndex());
-            beatInfo.put("scriptSentence", beat.getScriptSentence());
-            beatInfo.put("scenePrompt", beat.getScenePrompt());
-            beatInfo.put("sceneType", beat.getSceneType().name());
-            beatInfo.put("selectedForGeneration", beat.isSelectedForGeneration());
-
-            List<Map<String, Object>> assetEntries = new ArrayList<>();
-            for (GeneratedAsset asset : assetsByBeat.getOrDefault(beat.getId(), List.of())) {
-                Map<String, Object> assetInfo = new LinkedHashMap<>();
-                assetInfo.put("id", asset.getId());
-                assetInfo.put("assetType", asset.getAssetType().name());
-                assetInfo.put("url", asset.getUrl());
-                assetInfo.put("provider", asset.getProvider());
-                assetInfo.put("mimeType", asset.getMimeType());
-                assetInfo.put("durationSeconds", asset.getDurationSeconds());
-                assetInfo.put("filename", buildAssetFilename(beat, asset, true));
-                assetEntries.add(assetInfo);
-            }
-            beatInfo.put("assets", assetEntries);
-            beatEntries.add(beatInfo);
-        }
-
-        manifest.put("beats", beatEntries);
-        byte[] manifestBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(manifest);
-        ZipEntry entry = new ZipEntry("manifest.json");
-        zipOutputStream.putNextEntry(entry);
-        zipOutputStream.write(manifestBytes);
-        zipOutputStream.closeEntry();
     }
 
     private void writeAsset(ZipOutputStream zipOutputStream, TimelineBeat beat, GeneratedAsset asset) throws IOException {
@@ -153,7 +98,7 @@ public class ExportService {
     }
 
     private void writeErrorFile(ZipOutputStream zipOutputStream, TimelineBeat beat, GeneratedAsset asset, String message) throws IOException {
-        String filename = "beats/" + beat.getOrderIndex() + "/asset-" + asset.getId() + "-error.txt";
+        String filename = "beat-" + beat.getOrderIndex() + "-asset-" + asset.getId() + "-error.txt";
         ZipEntry entry = new ZipEntry(filename);
         zipOutputStream.putNextEntry(entry);
         String payload = "Failed to download asset " + asset.getId() + ": " + message;
@@ -193,13 +138,12 @@ public class ExportService {
     }
 
     private String buildAssetFilename(TimelineBeat beat, GeneratedAsset asset, boolean includeExtension) {
-        String baseDir = "beats/" + beat.getOrderIndex() + "/";
         String stem = switch (asset.getAssetType()) {
             case AUDIO -> "narration";
             case IMAGE, VIDEO -> "scene";
         };
         String extension = includeExtension ? resolveExtension(asset) : "";
-        return baseDir + stem + extension;
+        return "beat-" + beat.getOrderIndex() + "-" + stem + "-" + asset.getId() + extension;
     }
 
     private String resolveExtension(GeneratedAsset asset) {

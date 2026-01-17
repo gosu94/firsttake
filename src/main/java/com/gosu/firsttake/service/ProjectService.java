@@ -232,6 +232,7 @@ public class ProjectService {
         return mapBeatsWithAssets(saved);
     }
 
+    @Transactional
     public List<ProjectDtos.BeatDetail> generateAssets(Long projectId, ProjectRequests.GenerateAssets request) {
         Project project = getProjectForDefaultUser(projectId);
         List<TimelineBeat> beats = beatRepository.findByProjectIdOrderByOrderIndexAsc(projectId);

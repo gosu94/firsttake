@@ -3,7 +3,7 @@ package com.gosu.firsttake.ai.veo3fast;
 public class Veo3FastRequest {
     private String prompt;
     private String aspectRatio = "16:9";
-    private String duration = "8s";
+    private String duration = "6s";
     private String resolution = "720p";
     private Boolean generateAudio = Boolean.TRUE;
     private Boolean autoFix = Boolean.TRUE;

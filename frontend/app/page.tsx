@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Asset = {
     id: number;
@@ -43,6 +43,58 @@ type ProjectDetail = {
     beats: Beat[];
 };
 
+type NarrationPreset = {
+    id: string;
+    label: string;
+    description: string;
+    ttsPrompt: string;
+};
+
+const NARRATION_PRESETS: NarrationPreset[] = [
+    {
+        "id": "blockbuster_trailer",
+        "label": "Blockbuster Trailer",
+        "description": "Epic, cinematic narration with dramatic weight and authority.",
+        "ttsPrompt": "Deep male cinematic trailer voice. Slow, commanding delivery with long dramatic pauses. Low pitch, rich resonance, and controlled power. Slight breath before key lines. Calm intensity that escalates into epic authority. Every word feels heavy and consequential, like a summer blockbuster trailer."
+    },
+    {
+        "id": "energetic_social_ad",
+        "label": "Energetic Social Ad",
+        "description": "Fast, upbeat delivery designed to grab attention instantly.",
+        "ttsPrompt": "Bright, energetic commercial voice. Fast-paced, upbeat delivery with lively rhythm and sharp emphasis. Short pauses, quick transitions, and playful energy. Sound excited, confident, and immediately engaging, like a high-performing TikTok or Instagram ad."
+    },
+    {
+        "id": "professional_commercial",
+        "label": "Professional Commercial",
+        "description": "Polished, confident, and brand-safe narration.",
+        "ttsPrompt": "Confident professional commercial voice. Medium pacing with clean articulation and controlled emphasis. Calm authority, smooth delivery, and steady rhythm. Sound trustworthy, modern, and polished, like a national brand commercial."
+    },
+    {
+        "id": "calm_explainer",
+        "label": "Calm Explainer",
+        "description": "Clear, neutral narration for tutorials and explanations.",
+        "ttsPrompt": "Clear, calm explainer voice. Neutral tone with steady, even pacing. Gentle pauses between ideas, minimal emotional variation. Sound informative, reassuring, and easy to follow, like a high-quality product walkthrough."
+    },
+    {
+        "id": "friendly_conversational",
+        "label": "Friendly Conversational",
+        "description": "Warm, natural, and approachable delivery.",
+        "ttsPrompt": "Warm, friendly conversational voice. Natural pacing with slight pauses and relaxed phrasing. Light emphasis and subtle emotional variation. Sound human, approachable, and engaging, like speaking directly to a friend."
+    },
+    {
+        "id": "inspirational_motivational",
+        "label": "Inspirational / Motivational",
+        "description": "Uplifting, confident voice that inspires action.",
+        "ttsPrompt": "Confident inspirational voice. Steady pacing that gradually builds in energy. Clear emphasis on action words, emotional lift in key moments, and a strong, encouraging finish. Sound empowering, optimistic, and motivating."
+    },
+    {
+        "id": "urgent_limited_time",
+        "label": "Urgent / Limited Time",
+        "description": "Persuasive delivery with a strong sense of urgency.",
+        "ttsPrompt": "Urgent promotional voice. Faster pacing with tight pauses and strong emphasis. Controlled intensity that creates pressure without panic. Sound persuasive, decisive, and time-sensitive, like a limited-time offer announcement."
+    }
+]
+
 const fetchJson = async <T,>(url: string, options?: RequestInit): Promise<T> => {
     const response = await fetch(url, {
         headers: {
@@ -62,7 +114,8 @@ export default function Page() {
     const [prompt, setPrompt] = useState('');
     const [tone, setTone] = useState('professional');
     const [narrator, setNarrator] = useState('alloy');
-    const [narratorPrompt, setNarratorPrompt] = useState('');
+    const [narratorPrompt, setNarratorPrompt] = useState(NARRATION_PRESETS[0].ttsPrompt);
+    const [narrationPresetId, setNarrationPresetId] = useState(NARRATION_PRESETS[0].id);
     const [visualStylePrompt, setVisualStylePrompt] = useState('');
     const [format, setFormat] = useState('16:9');
     const [duration, setDuration] = useState('30s');
@@ -74,6 +127,22 @@ export default function Page() {
     const [isGeneratingAssets, setIsGeneratingAssets] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [animationKey, setAnimationKey] = useState(0);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+    const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+    const [isPreviewPaused, setIsPreviewPaused] = useState(false);
+    const previewTimerRef = useRef<number | null>(null);
+    const previewStepMsRef = useRef<number | null>(null);
+    const previewIndexRef = useRef(0);
+    const previewScrollTimeoutRef = useRef<number | null>(null);
+    const beatRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const voiceOptions = [
+        { id: 'alloy', label: 'Alloy' },
+        { id: 'fable', label: 'Fable' },
+        { id: 'nova', label: 'Nova' },
+        { id: 'onyx', label: 'Onyx' },
+        { id: 'shimmer', label: 'Shimmer' },
+    ];
 
     const projectLoaded = useMemo(() => projectId !== null, [projectId]);
 
@@ -104,7 +173,12 @@ export default function Page() {
         setPrompt(detail.generalPrompt ?? '');
         setTone(detail.tone ?? 'professional');
         setNarrator(detail.narratorVoice ?? 'alloy');
-        setNarratorPrompt(detail.narratorVoicePrompt ?? '');
+        const matchedPreset = detail.narratorVoicePrompt
+            ? NARRATION_PRESETS.find((preset) => preset.ttsPrompt === detail.narratorVoicePrompt)
+            : undefined;
+        const selectedPreset = matchedPreset ?? NARRATION_PRESETS[0];
+        setNarrationPresetId(selectedPreset.id);
+        setNarratorPrompt(selectedPreset.ttsPrompt);
         setVisualStylePrompt(detail.visualStylePrompt ?? '');
         setBeats(detail.beats ?? []);
     };
@@ -190,6 +264,177 @@ export default function Page() {
         }
     };
 
+    const insertBeatAt = async (targetOrderIndex: number) => {
+        const activeProjectId = projectId;
+        if (activeProjectId === null) {
+            return;
+        }
+        const sorted = [...beats].sort((a, b) => a.orderIndex - b.orderIndex);
+        const updates = sorted
+            .filter((beat) => beat.orderIndex >= targetOrderIndex)
+            .map((beat) => ({ id: beat.id, orderIndex: beat.orderIndex + 1 }));
+        setBeats((prev) =>
+            prev.map((beat) => {
+                const match = updates.find((item) => item.id === beat.id);
+                return match ? { ...beat, orderIndex: match.orderIndex } : beat;
+            }),
+        );
+        await Promise.all(
+            updates.map((item) =>
+                updateBeat(item.id, {
+                    orderIndex: item.orderIndex,
+                }),
+            ),
+        );
+        await fetchJson<Beat>(`/api/projects/${activeProjectId}/beats`, {
+            method: 'POST',
+            body: JSON.stringify({
+                orderIndex: targetOrderIndex,
+                scriptSentence: '',
+                scenePrompt: '',
+                sceneType: 'IMAGE',
+                selectedForGeneration: true,
+            }),
+        });
+        await loadProject(activeProjectId);
+    };
+
+    const scrollToBeatIndex = (index: number) => {
+        const beat = beats[index];
+        if (!beat) {
+            return;
+        }
+        const node = beatRefs.current.get(beat.id);
+        if (!node) {
+            return;
+        }
+        window.requestAnimationFrame(() => {
+            node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    };
+
+    const clearPreviewTimer = () => {
+        if (previewTimerRef.current) {
+            window.clearInterval(previewTimerRef.current);
+            previewTimerRef.current = null;
+        }
+    };
+
+    const startPreviewTimer = (stepMs: number) => {
+        clearPreviewTimer();
+        previewTimerRef.current = window.setInterval(() => {
+            scrollToBeatIndex(previewIndexRef.current);
+            previewIndexRef.current += 1;
+            if (previewIndexRef.current >= beats.length) {
+                clearPreviewTimer();
+            }
+        }, stepMs);
+    };
+
+    const stopPreview = () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+        clearPreviewTimer();
+        if (previewScrollTimeoutRef.current) {
+            window.clearTimeout(previewScrollTimeoutRef.current);
+            previewScrollTimeoutRef.current = null;
+        }
+        previewIndexRef.current = 0;
+        previewStepMsRef.current = null;
+        setIsPreviewPlaying(false);
+        setIsPreviewPaused(false);
+    };
+
+    const playPreview = () => {
+        if (isPreviewPlaying) {
+            const audio = audioRef.current;
+            if (audio) {
+                audio.pause();
+                setIsPreviewPlaying(false);
+                setIsPreviewPaused(true);
+                clearPreviewTimer();
+            }
+            return;
+        }
+        if (isPreviewPaused) {
+            const audio = audioRef.current;
+            if (!audio) {
+                setIsPreviewPaused(false);
+                return;
+            }
+            const stepMs = previewStepMsRef.current;
+            if (stepMs) {
+                previewIndexRef.current = Math.min(
+                    Math.floor((audio.currentTime * 1000) / stepMs),
+                    Math.max(beats.length - 1, 0),
+                );
+                scrollToBeatIndex(previewIndexRef.current);
+                previewIndexRef.current += 1;
+                startPreviewTimer(stepMs);
+            }
+            setIsPreviewPlaying(true);
+            setIsPreviewPaused(false);
+            void audio.play();
+            return;
+        }
+        const narrationAsset = beats
+            .flatMap((beat) => beat.assets || [])
+            .find((asset) => asset.assetType === 'AUDIO');
+        if (!narrationAsset) {
+            return;
+        }
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (previewScrollTimeoutRef.current) {
+            window.clearTimeout(previewScrollTimeoutRef.current);
+        }
+        previewScrollTimeoutRef.current = window.setTimeout(() => {
+            const audio = new Audio(narrationAsset.url);
+            audioRef.current = audio;
+            previewIndexRef.current = 0;
+            setIsPreviewPlaying(true);
+            setIsPreviewPaused(false);
+            audio.onended = () => {
+                stopPreview();
+            };
+            audio.onloadedmetadata = () => {
+                const duration = audio.duration || 0;
+                const beatCount = beats.length || 1;
+                const stepMs = Math.max((duration / beatCount) * 1000, 800);
+                previewStepMsRef.current = stepMs;
+                previewIndexRef.current = 0;
+                scrollToBeatIndex(0);
+                previewIndexRef.current = 1;
+                startPreviewTimer(stepMs);
+            };
+            void audio.play();
+        }, 300);
+    };
+
+    const playVoiceSample = (voiceId: string) => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+        const audio = new Audio(`/voices/${voiceId}.mp3`);
+        audioRef.current = audio;
+        void audio.play();
+    };
+
+    const applyNarrationPreset = (preset: NarrationPreset) => {
+        setNarrationPresetId(preset.id);
+        setNarratorPrompt(preset.ttsPrompt);
+        void updateProject({ narratorVoicePrompt: preset.ttsPrompt });
+    };
+
+    const selectedNarrationPreset =
+        NARRATION_PRESETS.find((preset) => preset.id === narrationPresetId) ?? NARRATION_PRESETS[0];
+
     const shouldAnimate = animationKey > 0;
     const hasAssets = beats.some((beat) => beat.assets && beat.assets.length > 0);
 
@@ -254,9 +499,12 @@ export default function Page() {
                 </div>
             </nav>
 
-            <div className="flex min-h-[calc(100vh-80px)] p-6 gap-6" data-oid="_0-3vjy">
+            <div
+                className="flex min-h-[calc(100vh-80px)] p-4 md:p-6 gap-6 flex-col lg:flex-row"
+                data-oid="_0-3vjy"
+            >
                 <div
-                    className="w-1/3 bg-black/90 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700"
+                    className="w-full lg:w-1/3 bg-black/90 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700 min-w-0"
                     data-oid="5_ab5.k"
                 >
                     <h2 className="text-white text-xl font-semibold mb-6" data-oid="inwpe9-">
@@ -327,46 +575,89 @@ export default function Page() {
                                 >
                                     Narrator Voice
                                 </label>
-                                <select
-                                    value={narrator}
-                                    onChange={(e) => {
-                                        setNarrator(e.target.value);
-                                        void updateProject({ narratorVoice: e.target.value });
-                                    }}
-                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    data-oid="7-perv3"
-                                >
-                                    <option value="alloy" data-oid="-xdsib9">
-                                        Alloy
-                                    </option>
-                                    <option value="fable" data-oid="esgmxv_">
-                                        Fable
-                                    </option>
-                                    <option value="nova" data-oid="329eh.o">
-                                        Nova
-                                    </option>
-                                    <option value="onyx" data-oid="h-pmmbf">
-                                        Onyx
-                                    </option>
-                                    <option value="shimmer" data-oid="5ogdaaf">
-                                        Shimmer
-                                    </option>
-                                </select>
+                                <div className="relative" data-oid="7-perv3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsVoiceOpen((prev) => !prev)}
+                                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between"
+                                    >
+                                        <span>
+                                            {voiceOptions.find((voice) => voice.id === narrator)?.label ??
+                                                'Select voice'}
+                                        </span>
+                                        <span className="text-gray-400">{isVoiceOpen ? '▲' : '▼'}</span>
+                                    </button>
+                                    {isVoiceOpen && (
+                                        <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
+                                            {voiceOptions.map((voice) => (
+                                                <div
+                                                    key={voice.id}
+                                                    className={`flex items-center justify-between px-3 py-2 text-sm ${
+                                                        narrator === voice.id
+                                                            ? 'bg-blue-700/60 text-white'
+                                                            : 'text-gray-200 hover:bg-gray-800'
+                                                    }`}
+                                                >
+                                                    <button
+                                                        className="flex-1 text-left"
+                                                        onClick={() => {
+                                                            setNarrator(voice.id);
+                                                            setIsVoiceOpen(false);
+                                                            void updateProject({ narratorVoice: voice.id });
+                                                        }}
+                                                    >
+                                                        {voice.label}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => playVoiceSample(voice.id)}
+                                                        className="ml-3 h-8 w-8 rounded-full border border-gray-500 text-gray-200 hover:text-white hover:border-gray-300 transition-colors"
+                                                        aria-label={`Play ${voice.label} sample`}
+                                                    >
+                                                        ▶
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
                         <div data-oid="narrator-prompt">
                             <label className="block text-gray-300 text-sm font-medium mb-2">
-                                Narrator Voice Prompt
+                                Narration Style
                             </label>
-                            <textarea
-                                value={narratorPrompt}
-                                onChange={(e) => setNarratorPrompt(e.target.value)}
-                                onBlur={() => updateProject({ narratorVoicePrompt: narratorPrompt })}
-                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                rows={2}
-                                placeholder="e.g., warm, energetic, confident"
-                            />
+                            <div className="flex items-center gap-3">
+                                <select
+                                    value={narrationPresetId}
+                                    onChange={(e) => {
+                                        const preset =
+                                            NARRATION_PRESETS.find((item) => item.id === e.target.value) ??
+                                            NARRATION_PRESETS[0];
+                                        applyNarrationPreset(preset);
+                                    }}
+                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    {NARRATION_PRESETS.map((preset) => (
+                                        <option key={preset.id} value={preset.id}>
+                                            {preset.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="relative group">
+                                    <button
+                                        type="button"
+                                        aria-label={`About ${selectedNarrationPreset.label}`}
+                                        className="h-9 w-9 rounded-full border border-gray-500 text-sm text-gray-200 hover:text-white hover:border-gray-300"
+                                    >
+                                        i
+                                    </button>
+                                    <div className="absolute right-0 z-20 mt-2 w-64 rounded-md border border-gray-700 bg-gray-900 p-3 text-xs text-gray-200 opacity-0 shadow-xl transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                                        {selectedNarrationPreset.description}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div data-oid="visual-style-prompt">
@@ -485,9 +776,12 @@ export default function Page() {
                         <button
                             onClick={handleGenerateScript}
                             disabled={!projectLoaded || isGeneratingScript}
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-60"
+                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-60 flex items-center justify-center gap-2"
                             data-oid="qx5-qx1"
                         >
+                            {isGeneratingScript && (
+                                <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin"></span>
+                            )}
                             {isGeneratingScript ? 'Generating...' : 'Generate Script'}
                         </button>
 
@@ -500,7 +794,7 @@ export default function Page() {
                 </div>
 
                 <div
-                    className="flex-1 bg-gray-600/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-500 w-[983px] flex flex-col min-h-0"
+                    className="flex-1 bg-gray-600/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl border border-gray-500 w-full flex flex-col min-h-0 min-w-0"
                     data-oid="adq0q6s"
                 >
                     <div className="flex items-center justify-between mb-4">
@@ -512,7 +806,7 @@ export default function Page() {
                     {isLoading ? (
                         <div className="text-gray-200">Loading project...</div>
                     ) : (
-                        <div className="flex-1 min-h-0 overflow-y-auto pr-2" data-oid="timeline-scroll">
+                        <div className="flex-1 pr-2" data-oid="timeline-scroll">
                             <div key={animationKey} className="relative" data-oid="uuqdw6e">
                                 <div
                                     className={`absolute left-1/2 transform -translate-x-0.5 w-0.5 bg-white/30 top-0 bottom-0 ${shouldAnimate ? 'timeline-reveal' : ''}`}
@@ -523,18 +817,39 @@ export default function Page() {
                                     {beats.map((item, index) => (
                                         <div
                                             key={item.id}
-                                            className={`relative flex items-start ${shouldAnimate ? 'beat-reveal' : ''}`}
+                                            ref={(node) => {
+                                                if (node) {
+                                                    beatRefs.current.set(item.id, node);
+                                                }
+                                            }}
+                                            className={`relative flex flex-col lg:flex-row items-start ${shouldAnimate ? 'beat-reveal' : ''}`}
                                             style={
                                                 shouldAnimate ? { animationDelay: `${index * 120}ms` } : undefined
                                             }
                                             data-oid="9ofvvzi"
                                         >
+                                            <button
+                                                type="button"
+                                                onClick={() => insertBeatAt(item.orderIndex)}
+                                                className="timeline-plus -top-5"
+                                                aria-label="Add beat above"
+                                            >
+                                                +
+                                            </button>
                                             <div
                                                 className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full border-4 border-gray-600 z-10"
                                                 data-oid="2ru5:cv"
                                             ></div>
+                                            <button
+                                                type="button"
+                                                onClick={() => insertBeatAt(item.orderIndex + 1)}
+                                                className="timeline-plus top-full mt-2"
+                                                aria-label="Add beat below"
+                                            >
+                                                +
+                                            </button>
 
-                                        <div className="w-[42%] pr-12" data-oid="_4c6a4t">
+                                        <div className="w-full lg:w-[42%] lg:pr-12" data-oid="_4c6a4t">
                                             <textarea
                                                 value={item.scriptSentence ?? ''}
                                                 onChange={(e) =>
@@ -542,13 +857,13 @@ export default function Page() {
                                                         scriptSentence: e.target.value,
                                                     })
                                                 }
-                                                    onBlur={(e) =>
-                                                        void updateBeat(item.id, {
-                                                            scriptSentence: e.target.value,
-                                                        })
-                                                    }
-                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[96px]"
-                                                    rows={3}
+                                                onBlur={(e) =>
+                                                    void updateBeat(item.id, {
+                                                        scriptSentence: e.target.value,
+                                                    })
+                                                }
+                                                className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900 text-base resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] script-float"
+                                                rows={4}
                                                     data-oid="b7:ppa4"
                                                 />
                                                 {item.assets && item.assets.length > 0 && (
@@ -567,9 +882,9 @@ export default function Page() {
                                                 )}
                                             </div>
 
-                                        <div className="w-[38%] pl-16 ml-auto" data-oid="eb_nnht">
+                                        <div className="w-full lg:w-[38%] lg:pl-20 lg:ml-auto mt-4 lg:mt-0" data-oid="eb_nnht">
                                             <div
-                                                className="bg-gray-700/80 border border-gray-500 rounded-lg p-3 max-w-[280px]"
+                                                className="bg-gray-700/80 border border-gray-500 rounded-lg p-3 max-w-full lg:max-w-[220px]"
                                                 data-oid="ch93ky."
                                             >
                                                 <textarea
@@ -584,8 +899,8 @@ export default function Page() {
                                                             scenePrompt: e.target.value,
                                                         })
                                                     }
-                                                    className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2 min-h-[80px]"
-                                                    rows={2}
+                                                    className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2 min-h-[110px]"
+                                                    rows={3}
                                                     data-oid="qygv_f3"
                                                 />
 
@@ -679,7 +994,7 @@ export default function Page() {
                                                 </div>
 
                                                 {item.assets && item.assets.length > 0 && (
-                                                    <div className="mt-3 space-y-2 max-w-[280px]">
+                                                    <div className="mt-3 space-y-2 max-w-full lg:max-w-[220px]">
                                                         {item.assets
                                                             .filter(
                                                                 (asset) =>
@@ -693,7 +1008,7 @@ export default function Page() {
                                                                             key={asset.id}
                                                                             src={asset.url}
                                                                             alt="Generated scene"
-                                                                            className="w-full rounded transition-transform duration-200 ease-out hover:scale-110 hover:z-10"
+                                                                            className="w-full rounded media-hover"
                                                                         />
                                                                     );
                                                                 }
@@ -703,7 +1018,7 @@ export default function Page() {
                                                                             key={asset.id}
                                                                             controls
                                                                             src={asset.url}
-                                                                            className="w-full rounded transition-transform duration-200 ease-out hover:scale-110 hover:z-10"
+                                                                            className="w-full rounded media-hover"
                                                                         />
                                                                     );
                                                                 }
@@ -719,7 +1034,7 @@ export default function Page() {
                         </div>
                     )}
 
-                    <div className="mt-auto pt-6 flex flex-col items-center gap-3" data-oid="9alignl">
+                    <div className="mt-auto pt-10 flex flex-col items-center gap-4" data-oid="9alignl">
                         {isGeneratingAssets && (
                             <div className="progress-track w-48" data-oid="progress-line">
                                 <div className="progress-line"></div>
@@ -747,6 +1062,17 @@ export default function Page() {
                     </div>
                 </div>
             </div>
+            {hasAssets && (
+                <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2" data-oid="preview-controls">
+                    <button
+                        type="button"
+                        onClick={playPreview}
+                        className="text-white text-sm uppercase tracking-wide border border-white/40 px-6 py-2 rounded-full bg-black/70 backdrop-blur-md hover:bg-white/10 transition-colors"
+                    >
+                        {isPreviewPlaying ? 'Pause' : isPreviewPaused ? 'Resume' : 'Play Preview'}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
