@@ -514,264 +514,277 @@ export default function Page() {
                     </h2>
 
                     <div className="space-y-6" data-oid="v:51w37">
-                        <div data-oid="v4inihj">
-                            <label
-                                className="block text-gray-300 text-sm font-medium mb-2"
-                                data-oid="6u43poq"
-                            >
-                                General Prompt
-                            </label>
-                            <textarea
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                                onBlur={() => updateProject({ generalPrompt: prompt })}
-                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                rows={4}
-                                placeholder="Describe your ad concept..."
-                                data-oid="t4hqnd2"
-                            />
-                        </div>
-
-                        <div className="flex space-x-4" data-oid="httpjw3">
-                            <div className="flex-1" data-oid="zakf9wn">
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-white text-lg font-semibold">Narration</h3>
+                            </div>
+                            <div data-oid="v4inihj">
                                 <label
                                     className="block text-gray-300 text-sm font-medium mb-2"
-                                    data-oid="0dtg.sx"
+                                    data-oid="6u43poq"
                                 >
-                                    Tone
+                                    General Prompt
                                 </label>
-                                <select
-                                    value={tone}
-                                    onChange={(e) => {
-                                        setTone(e.target.value);
-                                        void updateProject({ tone: e.target.value });
-                                    }}
-                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    data-oid="m46yds3"
-                                >
-                                    <option value="professional" data-oid="ugqxfo9">
-                                        Professional
-                                    </option>
-                                    <option value="funny" data-oid="wsegq71">
-                                        Funny
-                                    </option>
-                                    <option value="serious" data-oid="i2kdsly">
-                                        Serious
-                                    </option>
-                                    <option value="casual" data-oid="vr:8889">
-                                        Casual
-                                    </option>
-                                    <option value="dramatic" data-oid="3-dwsld">
-                                        Dramatic
-                                    </option>
-                                    <option value="upbeat" data-oid="e480hjc">
-                                        Upbeat
-                                    </option>
-                                </select>
+                                <textarea
+                                    value={prompt}
+                                    onChange={(e) => setPrompt(e.target.value)}
+                                    onBlur={() => updateProject({ generalPrompt: prompt })}
+                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                    rows={4}
+                                    placeholder="Describe your ad concept..."
+                                    data-oid="t4hqnd2"
+                                />
                             </div>
 
-                            <div className="flex-1" data-oid="e4ph900">
-                                <label
-                                    className="block text-gray-300 text-sm font-medium mb-2"
-                                    data-oid="p2xfd.5"
-                                >
-                                    Narrator Voice
-                                </label>
-                                <div className="relative" data-oid="7-perv3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsVoiceOpen((prev) => !prev)}
-                                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between"
+                            <div className="flex space-x-4" data-oid="httpjw3">
+                                <div className="flex-1" data-oid="zakf9wn">
+                                    <label
+                                        className="block text-gray-300 text-sm font-medium mb-2"
+                                        data-oid="0dtg.sx"
                                     >
-                                        <span>
-                                            {voiceOptions.find((voice) => voice.id === narrator)?.label ??
-                                                'Select voice'}
-                                        </span>
-                                        <span className="text-gray-400">{isVoiceOpen ? '▲' : '▼'}</span>
-                                    </button>
-                                    {isVoiceOpen && (
-                                        <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
-                                            {voiceOptions.map((voice) => (
-                                                <div
-                                                    key={voice.id}
-                                                    className={`flex items-center justify-between px-3 py-2 text-sm ${
-                                                        narrator === voice.id
-                                                            ? 'bg-blue-700/60 text-white'
-                                                            : 'text-gray-200 hover:bg-gray-800'
-                                                    }`}
-                                                >
-                                                    <button
-                                                        className="flex-1 text-left"
-                                                        onClick={() => {
-                                                            setNarrator(voice.id);
-                                                            setIsVoiceOpen(false);
-                                                            void updateProject({ narratorVoice: voice.id });
-                                                        }}
-                                                    >
-                                                        {voice.label}
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => playVoiceSample(voice.id)}
-                                                        className="ml-3 h-8 w-8 rounded-full border border-gray-500 text-gray-200 hover:text-white hover:border-gray-300 transition-colors"
-                                                        aria-label={`Play ${voice.label} sample`}
-                                                    >
-                                                        ▶
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div data-oid="narrator-prompt">
-                            <label className="block text-gray-300 text-sm font-medium mb-2">
-                                Narration Style
-                            </label>
-                            <div className="flex items-center gap-3">
-                                <select
-                                    value={narrationPresetId}
-                                    onChange={(e) => {
-                                        const preset =
-                                            NARRATION_PRESETS.find((item) => item.id === e.target.value) ??
-                                            NARRATION_PRESETS[0];
-                                        applyNarrationPreset(preset);
-                                    }}
-                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
-                                    {NARRATION_PRESETS.map((preset) => (
-                                        <option key={preset.id} value={preset.id}>
-                                            {preset.label}
+                                        Tone
+                                    </label>
+                                    <select
+                                        value={tone}
+                                        onChange={(e) => {
+                                            setTone(e.target.value);
+                                            void updateProject({ tone: e.target.value });
+                                        }}
+                                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        data-oid="m46yds3"
+                                    >
+                                        <option value="professional" data-oid="ugqxfo9">
+                                            Professional
                                         </option>
-                                    ))}
-                                </select>
-                                <div className="relative group">
-                                    <button
-                                        type="button"
-                                        aria-label={`About ${selectedNarrationPreset.label}`}
-                                        className="h-9 w-9 rounded-full border border-gray-500 text-sm text-gray-200 hover:text-white hover:border-gray-300"
+                                        <option value="funny" data-oid="wsegq71">
+                                            Funny
+                                        </option>
+                                        <option value="serious" data-oid="i2kdsly">
+                                            Serious
+                                        </option>
+                                        <option value="casual" data-oid="vr:8889">
+                                            Casual
+                                        </option>
+                                        <option value="dramatic" data-oid="3-dwsld">
+                                            Dramatic
+                                        </option>
+                                        <option value="upbeat" data-oid="e480hjc">
+                                            Upbeat
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div className="flex-1" data-oid="e4ph900">
+                                    <label
+                                        className="block text-gray-300 text-sm font-medium mb-2"
+                                        data-oid="p2xfd.5"
                                     >
-                                        i
-                                    </button>
-                                    <div className="absolute right-0 z-20 mt-2 w-64 rounded-md border border-gray-700 bg-gray-900 p-3 text-xs text-gray-200 opacity-0 shadow-xl transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                                        {selectedNarrationPreset.description}
+                                        Narrator Voice
+                                    </label>
+                                    <div className="relative" data-oid="7-perv3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsVoiceOpen((prev) => !prev)}
+                                            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between"
+                                        >
+                                            <span>
+                                                {voiceOptions.find((voice) => voice.id === narrator)?.label ??
+                                                    'Select voice'}
+                                            </span>
+                                            <span className="text-gray-400">{isVoiceOpen ? '▲' : '▼'}</span>
+                                        </button>
+                                        {isVoiceOpen && (
+                                            <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
+                                                {voiceOptions.map((voice) => (
+                                                    <div
+                                                        key={voice.id}
+                                                        className={`flex items-center justify-between px-3 py-2 text-sm ${
+                                                            narrator === voice.id
+                                                                ? 'bg-blue-700/60 text-white'
+                                                                : 'text-gray-200 hover:bg-gray-800'
+                                                        }`}
+                                                    >
+                                                        <button
+                                                            className="flex-1 text-left"
+                                                            onClick={() => {
+                                                                setNarrator(voice.id);
+                                                                setIsVoiceOpen(false);
+                                                                void updateProject({ narratorVoice: voice.id });
+                                                            }}
+                                                        >
+                                                            {voice.label}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => playVoiceSample(voice.id)}
+                                                            className="ml-3 h-8 w-8 rounded-full border border-gray-500 text-gray-200 hover:text-white hover:border-gray-300 transition-colors"
+                                                            aria-label={`Play ${voice.label} sample`}
+                                                        >
+                                                            ▶
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div data-oid="visual-style-prompt">
-                            <label className="block text-gray-300 text-sm font-medium mb-2">
-                                Visual Style Prompt
-                            </label>
-                            <textarea
-                                value={visualStylePrompt}
-                                onChange={(e) => setVisualStylePrompt(e.target.value)}
-                                onBlur={() => updateProject({ visualStylePrompt })}
-                                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                rows={2}
-                                placeholder="e.g., cinematic lighting, high contrast, 35mm film"
-                            />
-                        </div>
-
-                        <div className="flex space-x-4" data-oid="7hdd9jq">
-                            <div className="flex-1" data-oid="j-b63zj">
-                                <label
-                                    className="block text-gray-300 text-sm font-medium mb-2"
-                                    data-oid="lr03lk5"
-                                >
-                                    Time Duration
+                            <div data-oid="narrator-prompt">
+                                <label className="block text-gray-300 text-sm font-medium mb-2">
+                                    Narration Style
                                 </label>
-                                <select
-                                    value={duration}
-                                    onChange={(e) => setDuration(e.target.value)}
-                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    data-oid="6ddbp-g"
-                                >
-                                    <option value="10s" data-oid=":y2hgvy">
-                                        10s
-                                    </option>
-                                    <option value="15s" data-oid="c2o8zfl">
-                                        15s
-                                    </option>
-                                    <option value="30s" data-oid="y2lmp12">
-                                        30s
-                                    </option>
-                                    <option value="60s" data-oid="wo9.xi7">
-                                        60s
-                                    </option>
-                                </select>
+                                <div className="flex items-center gap-3">
+                                    <select
+                                        value={narrationPresetId}
+                                        onChange={(e) => {
+                                            const preset =
+                                                NARRATION_PRESETS.find((item) => item.id === e.target.value) ??
+                                                NARRATION_PRESETS[0];
+                                            applyNarrationPreset(preset);
+                                        }}
+                                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        {NARRATION_PRESETS.map((preset) => (
+                                            <option key={preset.id} value={preset.id}>
+                                                {preset.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="relative group">
+                                        <button
+                                            type="button"
+                                            aria-label={`About ${selectedNarrationPreset.label}`}
+                                            className="h-9 w-9 rounded-full border border-gray-500 text-sm text-gray-200 hover:text-white hover:border-gray-300"
+                                        >
+                                            i
+                                        </button>
+                                        <div className="absolute right-0 z-20 mt-2 w-64 rounded-md border border-gray-700 bg-gray-900 p-3 text-xs text-gray-200 opacity-0 shadow-xl transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                                            {selectedNarrationPreset.description}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="flex-1" data-oid="5pktiqb">
-                                <label
-                                    className="block text-gray-300 text-sm font-medium mb-2"
-                                    data-oid="kw1igaa"
-                                >
-                                    CTA Style
-                                </label>
-                                <select
-                                    value={ctaStyle}
-                                    onChange={(e) => setCtaStyle(e.target.value)}
-                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    data-oid="ok43i03"
-                                >
-                                    <option value="soft" data-oid="xkckkua">
-                                        Soft (learn more)
-                                    </option>
-                                    <option value="direct" data-oid="h6r78jv">
-                                        Direct (buy now)
-                                    </option>
-                                    <option value="urgent" data-oid="tq4p1xv">
-                                        Urgent (limited offer)
-                                    </option>
-                                    <option value="informational" data-oid="fvo.316">
-                                        Informational
-                                    </option>
-                                </select>
+                            <div className="flex space-x-4" data-oid="7hdd9jq">
+                                <div className="flex-1" data-oid="j-b63zj">
+                                    <label
+                                        className="block text-gray-300 text-sm font-medium mb-2"
+                                        data-oid="lr03lk5"
+                                    >
+                                        Time Duration
+                                    </label>
+                                    <select
+                                        value={duration}
+                                        onChange={(e) => setDuration(e.target.value)}
+                                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        data-oid="6ddbp-g"
+                                    >
+                                        <option value="10s" data-oid=":y2hgvy">
+                                            10s
+                                        </option>
+                                        <option value="15s" data-oid="c2o8zfl">
+                                            15s
+                                        </option>
+                                        <option value="30s" data-oid="y2lmp12">
+                                            30s
+                                        </option>
+                                        <option value="45s" data-oid="y2lmp12">
+                                            45s
+                                        </option>
+                                        <option value="60s" data-oid="wo9.xi7">
+                                            60s
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div className="flex-1" data-oid="5pktiqb">
+                                    <label
+                                        className="block text-gray-300 text-sm font-medium mb-2"
+                                        data-oid="kw1igaa"
+                                    >
+                                        CTA Style
+                                    </label>
+                                    <select
+                                        value={ctaStyle}
+                                        onChange={(e) => setCtaStyle(e.target.value)}
+                                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        data-oid="ok43i03"
+                                    >
+                                        <option value="soft" data-oid="xkckkua">
+                                            Soft (learn more)
+                                        </option>
+                                        <option value="direct" data-oid="h6r78jv">
+                                            Direct (buy now)
+                                        </option>
+                                        <option value="urgent" data-oid="tq4p1xv">
+                                            Urgent (limited offer)
+                                        </option>
+                                        <option value="informational" data-oid="fvo.316">
+                                            Informational
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
-                        <div data-oid="2e4ba0y">
-                            <label
-                                className="block text-gray-300 text-sm font-medium mb-2"
-                                data-oid="s3jr5kh"
-                            >
-                                Format
-                            </label>
-                            <div className="flex space-x-4" data-oid="jnbw0ny">
-                                <button
-                                    onClick={() => setFormat('16:9')}
-                                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
-                                        format === '16:9'
-                                            ? 'bg-blue-600 border-blue-500 text-white'
-                                            : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                                    }`}
-                                    data-oid=".59ih7v"
+                        <div className="space-y-4 border-t border-gray-700/60 pt-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-white text-lg font-semibold">Visuals</h3>
+                            </div>
+                            <div data-oid="visual-style-prompt">
+                                <label className="block text-gray-300 text-sm font-medium mb-2">
+                                    Visual Style Prompt
+                                </label>
+                                <textarea
+                                    value={visualStylePrompt}
+                                    onChange={(e) => setVisualStylePrompt(e.target.value)}
+                                    onBlur={() => updateProject({ visualStylePrompt })}
+                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                    rows={2}
+                                    placeholder="e.g., cinematic lighting, high contrast, 35mm film"
+                                />
+                            </div>
+
+                            <div data-oid="2e4ba0y">
+                                <label
+                                    className="block text-gray-300 text-sm font-medium mb-2"
+                                    data-oid="s3jr5kh"
                                 >
-                                    <div
-                                        className="w-6 h-4 bg-current rounded-sm opacity-60"
-                                        data-oid="esq_xva"
-                                    ></div>
-                                    <span data-oid="fu-z21w">16:9</span>
-                                </button>
-                                <button
-                                    onClick={() => setFormat('9:16')}
-                                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
-                                        format === '9:16'
-                                            ? 'bg-blue-600 border-blue-500 text-white'
-                                            : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
-                                    }`}
-                                    data-oid="3pi1giu"
-                                >
-                                    <div
-                                        className="w-4 h-6 bg-current rounded-sm opacity-60"
-                                        data-oid="8g-tdyd"
-                                    ></div>
-                                    <span data-oid="g4vy:ni">9:16</span>
-                                </button>
+                                    Format
+                                </label>
+                                <div className="flex space-x-4" data-oid="jnbw0ny">
+                                    <button
+                                        onClick={() => setFormat('16:9')}
+                                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
+                                            format === '16:9'
+                                                ? 'bg-blue-600 border-blue-500 text-white'
+                                                : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                                        }`}
+                                        data-oid=".59ih7v"
+                                    >
+                                        <div
+                                            className="w-6 h-4 bg-current rounded-sm opacity-60"
+                                            data-oid="esq_xva"
+                                        ></div>
+                                        <span data-oid="fu-z21w">16:9</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setFormat('9:16')}
+                                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
+                                            format === '9:16'
+                                                ? 'bg-blue-600 border-blue-500 text-white'
+                                                : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                                        }`}
+                                        data-oid="3pi1giu"
+                                    >
+                                        <div
+                                            className="w-4 h-6 bg-current rounded-sm opacity-60"
+                                            data-oid="8g-tdyd"
+                                        ></div>
+                                        <span data-oid="g4vy:ni">9:16</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
