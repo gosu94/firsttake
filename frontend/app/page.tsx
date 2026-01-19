@@ -897,7 +897,7 @@ export default function Page() {
                                     data-oid="o2sp6h3"
                                 ></div>
 
-                                <div className="space-y-6" data-oid="z:ev92q">
+                                <div className="space-y-6 pb-10" data-oid="z:ev92q">
                                     {beats.map((item, index) => (
                                         <div
                                             key={item.id}
@@ -1198,7 +1198,11 @@ export default function Page() {
                         </div>
                         <div
                             className="flex items-center justify-center rounded-xl bg-black"
-                            style={{ aspectRatio: format === '9:16' ? '9 / 16' : '16 / 9' }}
+                            style={
+                                format === '9:16'
+                                    ? { aspectRatio: '9 / 16', maxHeight: '65vh', maxWidth: '45vw' }
+                                    : { aspectRatio: '16 / 9', maxHeight: '60vh', maxWidth: '100%' }
+                            }
                         >
                             {(() => {
                                 const beat = beats[previewIndex];
