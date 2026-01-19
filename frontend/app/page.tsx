@@ -131,17 +131,28 @@ export default function Page() {
     const [isVoiceOpen, setIsVoiceOpen] = useState(false);
     const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
     const [isPreviewPaused, setIsPreviewPaused] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [previewIndex, setPreviewIndex] = useState(0);
     const previewTimerRef = useRef<number | null>(null);
     const previewStepMsRef = useRef<number | null>(null);
     const previewIndexRef = useRef(0);
     const previewScrollTimeoutRef = useRef<number | null>(null);
+    const [isCreatingBlank, setIsCreatingBlank] = useState(false);
     const beatRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const voiceOptions = [
         { id: 'alloy', label: 'Alloy' },
+        { id: 'ash', label: 'Ash' },
+        { id: 'ballad', label: 'Ballad' },
+        { id: 'cedar', label: 'Cedar' },
+        { id: 'coral', label: 'Coral' },
+        { id: 'echo', label: 'Echo' },
         { id: 'fable', label: 'Fable' },
+        { id: 'marin', label: 'Marin' },
         { id: 'nova', label: 'Nova' },
         { id: 'onyx', label: 'Onyx' },
+        { id: 'sage', label: 'Sage' },
         { id: 'shimmer', label: 'Shimmer' },
+        { id: 'verse', label: 'Verse' },
     ];
 
     const projectLoaded = useMemo(() => projectId !== null, [projectId]);
@@ -301,20 +312,6 @@ export default function Page() {
         await loadProject(activeProjectId);
     };
 
-    const scrollToBeatIndex = (index: number) => {
-        const beat = beats[index];
-        if (!beat) {
-            return;
-        }
-        const node = beatRefs.current.get(beat.id);
-        if (!node) {
-            return;
-        }
-        window.requestAnimationFrame(() => {
-            node.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-    };
-
     const clearPreviewTimer = () => {
         if (previewTimerRef.current) {
             window.clearInterval(previewTimerRef.current);
@@ -325,10 +322,12 @@ export default function Page() {
     const startPreviewTimer = (stepMs: number) => {
         clearPreviewTimer();
         previewTimerRef.current = window.setInterval(() => {
-            scrollToBeatIndex(previewIndexRef.current);
+            setPreviewIndex(previewIndexRef.current);
             previewIndexRef.current += 1;
             if (previewIndexRef.current >= beats.length) {
                 clearPreviewTimer();
+                setIsPreviewPlaying(false);
+                setIsPreviewPaused(false);
             }
         }, stepMs);
     };
@@ -347,6 +346,7 @@ export default function Page() {
         previewStepMsRef.current = null;
         setIsPreviewPlaying(false);
         setIsPreviewPaused(false);
+        setPreviewIndex(0);
     };
 
     const playPreview = () => {
@@ -372,7 +372,7 @@ export default function Page() {
                     Math.floor((audio.currentTime * 1000) / stepMs),
                     Math.max(beats.length - 1, 0),
                 );
-                scrollToBeatIndex(previewIndexRef.current);
+                setPreviewIndex(previewIndexRef.current);
                 previewIndexRef.current += 1;
                 startPreviewTimer(stepMs);
             }
@@ -391,7 +391,7 @@ export default function Page() {
             audioRef.current.pause();
             audioRef.current = null;
         }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setIsPreviewOpen(true);
         if (previewScrollTimeoutRef.current) {
             window.clearTimeout(previewScrollTimeoutRef.current);
         }
@@ -399,10 +399,13 @@ export default function Page() {
             const audio = new Audio(narrationAsset.url);
             audioRef.current = audio;
             previewIndexRef.current = 0;
+            setPreviewIndex(0);
             setIsPreviewPlaying(true);
             setIsPreviewPaused(false);
             audio.onended = () => {
-                stopPreview();
+                setIsPreviewPlaying(false);
+                setIsPreviewPaused(false);
+                clearPreviewTimer();
             };
             audio.onloadedmetadata = () => {
                 const duration = audio.duration || 0;
@@ -410,12 +413,12 @@ export default function Page() {
                 const stepMs = Math.max((duration / beatCount) * 1000, 800);
                 previewStepMsRef.current = stepMs;
                 previewIndexRef.current = 0;
-                scrollToBeatIndex(0);
+                setPreviewIndex(0);
                 previewIndexRef.current = 1;
                 startPreviewTimer(stepMs);
             };
             void audio.play();
-        }, 300);
+        }, 100);
     };
 
     const playVoiceSample = (voiceId: string) => {
@@ -437,6 +440,51 @@ export default function Page() {
     const selectedNarrationPreset =
         NARRATION_PRESETS.find((preset) => preset.id === narrationPresetId) ?? NARRATION_PRESETS[0];
 
+    const createBlankBeats = async () => {
+        const activeProjectId = projectId;
+        if (!activeProjectId || isCreatingBlank) {
+            return;
+        }
+        setIsCreatingBlank(true);
+        setError(null);
+        try {
+            for (let index = 0; index < 4; index += 1) {
+                await fetchJson<Beat>(`/api/projects/${activeProjectId}/beats`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        orderIndex: index,
+                        scriptSentence: '',
+                        scenePrompt: '',
+                        sceneType: 'IMAGE',
+                        selectedForGeneration: true,
+                    }),
+                });
+            }
+            await loadProject(activeProjectId);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to create blank beats.');
+        } finally {
+            setIsCreatingBlank(false);
+        }
+    };
+
+    const deleteBeatAt = async (beatId: number) => {
+        const activeProjectId = projectId;
+        if (!activeProjectId) {
+            return;
+        }
+        try {
+            const response = await fetch(`/api/beats/${beatId}`, { method: 'DELETE' });
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(message || 'Failed to delete beat.');
+            }
+            await loadProject(activeProjectId);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to delete beat.');
+        }
+    };
+
     const shouldAnimate = animationKey > 0;
     const hasAssets = beats.some((beat) => beat.assets && beat.assets.length > 0);
 
@@ -446,8 +494,15 @@ export default function Page() {
                 className="glass-nav px-6 py-4 flex justify-between items-center sticky top-0 z-50 animate-slide-in-up"
                 data-oid=":949wnf"
             >
-                <div className="text-white font-bold text-2xl tracking-tight text-glow" data-oid="8-c1j3u">
-                    AdScript AI
+                <div className="flex items-center gap-3 text-white font-bold text-2xl tracking-tight text-glow" data-oid="8-c1j3u">
+                    <img
+                        src="/favicon.ico"
+                        alt="FirstTake AI logo"
+                        className="h-10 w-10"
+                    />
+                    <span>
+                        FirstTake <span className="text-purple-400">AI</span>
+                    </span>
                 </div>
                 <div className="flex items-center space-x-4" data-oid="mpduif4">
                     <button
@@ -822,6 +877,18 @@ export default function Page() {
 
                     {isLoading ? (
                         <div className="text-gray-200">Loading project...</div>
+                    ) : beats.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center flex-1 gap-4 text-gray-200">
+                            <div>No script yet.</div>
+                            <button
+                                type="button"
+                                onClick={createBlankBeats}
+                                disabled={!projectLoaded || isCreatingBlank}
+                                className="px-5 py-2 rounded-full border border-white/30 text-white hover:bg-white/10 transition-colors disabled:opacity-60"
+                            >
+                                {isCreatingBlank ? 'Creating...' : 'Create Blank'}
+                            </button>
+                        </div>
                     ) : (
                         <div className="flex-1 pr-2" data-oid="timeline-scroll">
                             <div key={animationKey} className="relative" data-oid="uuqdw6e">
@@ -839,7 +906,7 @@ export default function Page() {
                                                     beatRefs.current.set(item.id, node);
                                                 }
                                             }}
-                                            className={`relative flex flex-col lg:flex-row items-start ${shouldAnimate ? 'beat-reveal' : 'animate-fade-in'}`}
+                                            className={`relative flex w-full flex-col lg:flex-row items-start ${shouldAnimate ? 'beat-reveal' : 'animate-fade-in'}`}
                                             style={
                                                 shouldAnimate ? { animationDelay: `${index * 120}ms` } : { animationDelay: `${index * 50}ms` }
                                             }
@@ -854,9 +921,19 @@ export default function Page() {
                                                 +
                                             </button>
                                             <div
-                                                className="absolute left-1/2 transform -translate-x-1/2 w-5 h-5 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full border-4 border-black/50 shadow-lg shadow-purple-500/50 z-10 animate-pulse-glow"
+                                                className="absolute left-1/2 top-[60px] -translate-x-1/2 z-10 group"
                                                 data-oid="2ru5:cv"
-                                            ></div>
+                                            >
+                                                <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full border-4 border-black/50 shadow-lg shadow-purple-500/50 animate-pulse-glow"></div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => deleteBeatAt(item.id)}
+                                                    className="absolute left-full top-1/2 ml-3 -translate-y-1/2 w-5 h-5 rounded-full bg-black/50 text-white/80 text-xs font-semibold border border-white/30 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:text-white hover:border-white/50 hover:bg-white/10 z-20 flex items-center justify-center backdrop-blur-sm"
+                                                    aria-label="Delete beat"
+                                                >
+                                                    −
+                                                </button>
+                                            </div>
 
                                         <div className="w-full lg:w-[42%] lg:pr-12" data-oid="_4c6a4t">
                                             <textarea
@@ -1091,6 +1168,68 @@ export default function Page() {
                     >
                         {isPreviewPlaying ? 'Pause' : isPreviewPaused ? 'Resume' : 'Play Preview'}
                     </button>
+                </div>
+            )}
+            {isPreviewOpen && (
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                    <div className="relative w-[90vw] max-w-4xl rounded-2xl border border-white/10 bg-black/80 p-6 shadow-2xl">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                stopPreview();
+                                setIsPreviewOpen(false);
+                            }}
+                            className="absolute right-4 top-4 h-9 w-9 rounded-full border border-white/20 text-white/80 hover:text-white hover:border-white/40"
+                            aria-label="Close preview"
+                        >
+                            ×
+                        </button>
+                        <div className="mb-4 flex items-center justify-between text-sm text-white/60">
+                            <div>
+                                Beat {previewIndex + 1} of {beats.length}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={playPreview}
+                                className="rounded-full border border-white/30 px-4 py-1 text-xs uppercase tracking-wide text-white/80 hover:text-white hover:border-white/60"
+                            >
+                                {isPreviewPlaying ? 'Pause' : isPreviewPaused ? 'Resume' : 'Play'}
+                            </button>
+                        </div>
+                        <div
+                            className="flex items-center justify-center rounded-xl bg-black"
+                            style={{ aspectRatio: format === '9:16' ? '9 / 16' : '16 / 9' }}
+                        >
+                            {(() => {
+                                const beat = beats[previewIndex];
+                                const asset = beat?.assets?.find(
+                                    (item) => item.assetType === 'IMAGE' || item.assetType === 'VIDEO',
+                                );
+                                if (!asset) {
+                                    return <div className="text-white/70">No asset</div>;
+                                }
+                                if (asset.assetType === 'VIDEO') {
+                                    return (
+                                        <video
+                                            key={asset.id}
+                                            src={asset.url}
+                                            className="max-h-full max-w-full rounded-lg"
+                                            autoPlay
+                                            muted
+                                            playsInline
+                                        />
+                                    );
+                                }
+                                return (
+                                    <img
+                                        src={asset.url}
+                                        alt="Generated scene"
+                                        className="max-h-full max-w-full rounded-lg"
+                                    />
+                                );
+                            })()}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -38,9 +38,9 @@ public class TtsService {
         String model = request.getModel() != null && !request.getModel().isBlank()
             ? request.getModel()
             : defaultModel;
-        String voice = request.getVoice() != null && !request.getVoice().isBlank()
-            ? request.getVoice()
-            : "alloy";
+        String voice = TtsVoice.fromId(request.getVoice())
+            .map(TtsVoice::id)
+            .orElse(TtsVoice.ALLOY.id());
         String responseFormat = request.getResponseFormat() != null && !request.getResponseFormat().isBlank()
             ? request.getResponseFormat()
             : "mp3";
