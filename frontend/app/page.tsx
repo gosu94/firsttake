@@ -441,17 +441,17 @@ export default function Page() {
     const hasAssets = beats.some((beat) => beat.assets && beat.assets.length > 0);
 
     return (
-        <div className="min-h-screen bg-gray-800 blueprint-grid" data-oid="sn:jvm8">
+        <div className="min-h-screen blueprint-grid relative overflow-hidden" data-oid="sn:jvm8">
             <nav
-                className="bg-black/80 backdrop-blur-sm border-b border-gray-700 px-6 py-4 flex justify-between items-center"
+                className="glass-nav px-6 py-4 flex justify-between items-center sticky top-0 z-50 animate-slide-in-up"
                 data-oid=":949wnf"
             >
-                <div className="text-white font-bold text-xl" data-oid="8-c1j3u">
+                <div className="text-white font-bold text-2xl tracking-tight text-glow" data-oid="8-c1j3u">
                     AdScript AI
                 </div>
                 <div className="flex items-center space-x-4" data-oid="mpduif4">
                     <button
-                        className="p-2 text-gray-400 hover:text-white transition-colors"
+                        className="p-2.5 text-gray-300 hover:text-white transition-all duration-300 rounded-lg hover:bg-white/10 backdrop-blur-sm"
                         data-oid="wj57jec"
                     >
                         <svg
@@ -471,7 +471,7 @@ export default function Page() {
                         </svg>
                     </button>
                     <button
-                        className="p-2 text-gray-400 hover:text-white transition-colors"
+                        className="p-2.5 text-gray-300 hover:text-white transition-all duration-300 rounded-lg hover:bg-white/10 backdrop-blur-sm"
                         data-oid="_he_i7v"
                     >
                         <svg
@@ -502,14 +502,15 @@ export default function Page() {
             </nav>
 
             <div
-                className="flex min-h-[calc(100vh-80px)] p-4 md:p-6 gap-6 flex-col lg:flex-row"
+                className="flex min-h-[calc(100vh-80px)] p-4 md:p-6 gap-6 flex-col lg:flex-row animate-fade-in"
                 data-oid="_0-3vjy"
             >
                 <div
-                    className="w-full lg:w-1/3 bg-black/90 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-gray-700 min-w-0"
+                    className="w-full lg:w-1/3 glass-sidebar p-6 min-w-0 animate-slide-in-up"
+                    style={{ animationDelay: '0.1s' }}
                     data-oid="5_ab5.k"
                 >
-                    <h2 className="text-white text-xl font-semibold mb-6" data-oid="inwpe9-">
+                    <h2 className="text-white text-2xl font-bold mb-6 tracking-tight" data-oid="inwpe9-">
                         Script Generator
                     </h2>
 
@@ -520,7 +521,7 @@ export default function Page() {
                             </div>
                             <div data-oid="v4inihj">
                                 <label
-                                    className="block text-gray-300 text-sm font-medium mb-2"
+                                    className="block text-gray-200 text-sm font-medium mb-2"
                                     data-oid="6u43poq"
                                 >
                                     General Prompt
@@ -529,7 +530,7 @@ export default function Page() {
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
                                     onBlur={() => updateProject({ generalPrompt: prompt })}
-                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                    className="textarea-glossy"
                                     rows={4}
                                     placeholder="Describe your ad concept..."
                                     data-oid="t4hqnd2"
@@ -539,7 +540,7 @@ export default function Page() {
                             <div className="flex space-x-4" data-oid="httpjw3">
                                 <div className="flex-1" data-oid="zakf9wn">
                                     <label
-                                        className="block text-gray-300 text-sm font-medium mb-2"
+                                        className="block text-gray-200 text-sm font-medium mb-2"
                                         data-oid="0dtg.sx"
                                     >
                                         Tone
@@ -550,7 +551,7 @@ export default function Page() {
                                             setTone(e.target.value);
                                             void updateProject({ tone: e.target.value });
                                         }}
-                                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="select-glossy"
                                         data-oid="m46yds3"
                                     >
                                         <option value="professional" data-oid="ugqxfo9">
@@ -576,7 +577,7 @@ export default function Page() {
 
                                 <div className="flex-1" data-oid="e4ph900">
                                     <label
-                                        className="block text-gray-300 text-sm font-medium mb-2"
+                                        className="block text-gray-200 text-sm font-medium mb-2"
                                         data-oid="p2xfd.5"
                                     >
                                         Narrator Voice
@@ -585,7 +586,7 @@ export default function Page() {
                                         <button
                                             type="button"
                                             onClick={() => setIsVoiceOpen((prev) => !prev)}
-                                            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between"
+                                            className="select-glossy flex items-center justify-between w-full"
                                         >
                                             <span>
                                                 {voiceOptions.find((voice) => voice.id === narrator)?.label ??
@@ -594,14 +595,14 @@ export default function Page() {
                                             <span className="text-gray-400">{isVoiceOpen ? '▲' : '▼'}</span>
                                         </button>
                                         {isVoiceOpen && (
-                                            <div className="absolute z-20 mt-2 w-full rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
+                                            <div className="absolute z-20 mt-2 w-full rounded-xl border border-white/20 bg-black/90 backdrop-blur-xl shadow-2xl overflow-hidden">
                                                 {voiceOptions.map((voice) => (
                                                     <div
                                                         key={voice.id}
-                                                        className={`flex items-center justify-between px-3 py-2 text-sm ${
+                                                        className={`flex items-center justify-between px-3 py-2.5 text-sm transition-all duration-200 ${
                                                             narrator === voice.id
-                                                                ? 'bg-blue-700/60 text-white'
-                                                                : 'text-gray-200 hover:bg-gray-800'
+                                                                ? 'bg-gradient-to-r from-purple-600/60 to-indigo-600/60 text-white'
+                                                                : 'text-gray-200 hover:bg-white/10'
                                                         }`}
                                                     >
                                                         <button
@@ -617,7 +618,7 @@ export default function Page() {
                                                         <button
                                                             type="button"
                                                             onClick={() => playVoiceSample(voice.id)}
-                                                            className="ml-3 h-8 w-8 rounded-full border border-gray-500 text-gray-200 hover:text-white hover:border-gray-300 transition-colors"
+                                                            className="ml-3 h-8 w-8 rounded-full border border-white/20 text-gray-200 hover:text-white hover:border-purple-500/50 hover:bg-purple-500/20 transition-all duration-200 flex items-center justify-center backdrop-blur-sm"
                                                             aria-label={`Play ${voice.label} sample`}
                                                         >
                                                             ▶
@@ -631,7 +632,7 @@ export default function Page() {
                             </div>
 
                             <div data-oid="narrator-prompt">
-                                <label className="block text-gray-300 text-sm font-medium mb-2">
+                                <label className="block text-gray-200 text-sm font-medium mb-2">
                                     Narration Style
                                 </label>
                                 <div className="flex items-center gap-3">
@@ -643,7 +644,7 @@ export default function Page() {
                                                 NARRATION_PRESETS[0];
                                             applyNarrationPreset(preset);
                                         }}
-                                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="select-glossy flex-1"
                                     >
                                         {NARRATION_PRESETS.map((preset) => (
                                             <option key={preset.id} value={preset.id}>
@@ -655,11 +656,11 @@ export default function Page() {
                                         <button
                                             type="button"
                                             aria-label={`About ${selectedNarrationPreset.label}`}
-                                            className="h-9 w-9 rounded-full border border-gray-500 text-sm text-gray-200 hover:text-white hover:border-gray-300"
+                                            className="h-9 w-9 rounded-full border border-white/20 text-sm text-gray-200 hover:text-white hover:border-purple-500/50 hover:bg-purple-500/20 transition-all duration-200 backdrop-blur-sm flex items-center justify-center"
                                         >
                                             i
                                         </button>
-                                        <div className="absolute right-0 z-20 mt-2 w-64 rounded-md border border-gray-700 bg-gray-900 p-3 text-xs text-gray-200 opacity-0 shadow-xl transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                                        <div className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-white/20 bg-black/90 backdrop-blur-xl p-3 text-xs text-gray-200 opacity-0 shadow-2xl transition-all duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
                                             {selectedNarrationPreset.description}
                                         </div>
                                     </div>
@@ -677,7 +678,7 @@ export default function Page() {
                                     <select
                                         value={duration}
                                         onChange={(e) => setDuration(e.target.value)}
-                                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="select-glossy"
                                         data-oid="6ddbp-g"
                                     >
                                         <option value="10s" data-oid=":y2hgvy">
@@ -708,7 +709,7 @@ export default function Page() {
                                     <select
                                         value={ctaStyle}
                                         onChange={(e) => setCtaStyle(e.target.value)}
-                                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="select-glossy"
                                         data-oid="ok43i03"
                                     >
                                         <option value="soft" data-oid="xkckkua">
@@ -733,14 +734,14 @@ export default function Page() {
                                 <h3 className="text-white text-lg font-semibold">Visuals</h3>
                             </div>
                             <div data-oid="visual-style-prompt">
-                                <label className="block text-gray-300 text-sm font-medium mb-2">
+                                <label className="block text-gray-200 text-sm font-medium mb-2">
                                     Visual Style Prompt
                                 </label>
                                 <textarea
                                     value={visualStylePrompt}
                                     onChange={(e) => setVisualStylePrompt(e.target.value)}
                                     onBlur={() => updateProject({ visualStylePrompt })}
-                                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                    className="textarea-glossy"
                                     rows={2}
                                     placeholder="e.g., cinematic lighting, high contrast, 35mm film"
                                 />
@@ -756,10 +757,10 @@ export default function Page() {
                                 <div className="flex space-x-4" data-oid="jnbw0ny">
                                     <button
                                         onClick={() => setFormat('16:9')}
-                                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
+                                        className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl border transition-all duration-300 backdrop-blur-sm ${
                                             format === '16:9'
-                                                ? 'bg-blue-600 border-blue-500 text-white'
-                                                : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                                                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 border-purple-500/50 text-white shadow-lg shadow-purple-500/30'
+                                                : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10 hover:border-white/30'
                                         }`}
                                         data-oid=".59ih7v"
                                     >
@@ -771,10 +772,10 @@ export default function Page() {
                                     </button>
                                     <button
                                         onClick={() => setFormat('9:16')}
-                                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
+                                        className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl border transition-all duration-300 backdrop-blur-sm ${
                                             format === '9:16'
-                                                ? 'bg-blue-600 border-blue-500 text-white'
-                                                : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                                                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 border-purple-500/50 text-white shadow-lg shadow-purple-500/30'
+                                                : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10 hover:border-white/30'
                                         }`}
                                         data-oid="3pi1giu"
                                     >
@@ -791,7 +792,7 @@ export default function Page() {
                         <button
                             onClick={handleGenerateScript}
                             disabled={!projectLoaded || isGeneratingScript}
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-60 flex items-center justify-center gap-2"
+                            className="btn-glow w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             data-oid="qx5-qx1"
                         >
                             {isGeneratingScript && (
@@ -809,11 +810,12 @@ export default function Page() {
                 </div>
 
                 <div
-                    className="flex-1 bg-gray-600/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl border border-gray-500 w-full flex flex-col min-h-0 min-w-0"
+                    className="flex-1 glass-timeline p-6 md:p-8 w-full flex flex-col min-h-0 min-w-0 animate-slide-in-up"
+                    style={{ animationDelay: '0.2s' }}
                     data-oid="adq0q6s"
                 >
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-white text-xl font-semibold" data-oid="ik41s-8">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-white text-2xl font-bold tracking-tight" data-oid="ik41s-8">
                             Script Timeline
                         </h2>
                     </div>
@@ -824,7 +826,7 @@ export default function Page() {
                         <div className="flex-1 pr-2" data-oid="timeline-scroll">
                             <div key={animationKey} className="relative" data-oid="uuqdw6e">
                                 <div
-                                    className={`absolute left-1/2 transform -translate-x-0.5 w-0.5 bg-white/30 top-0 bottom-0 ${shouldAnimate ? 'timeline-reveal' : ''}`}
+                                    className={`absolute left-1/2 transform -translate-x-0.5 w-0.5 bg-gradient-to-b from-purple-500/50 via-indigo-500/50 to-purple-500/50 top-0 bottom-0 ${shouldAnimate ? 'timeline-reveal' : ''}`}
                                     data-oid="o2sp6h3"
                                 ></div>
 
@@ -837,22 +839,22 @@ export default function Page() {
                                                     beatRefs.current.set(item.id, node);
                                                 }
                                             }}
-                                            className={`relative flex flex-col lg:flex-row items-start ${shouldAnimate ? 'beat-reveal' : ''}`}
+                                            className={`relative flex flex-col lg:flex-row items-start ${shouldAnimate ? 'beat-reveal' : 'animate-fade-in'}`}
                                             style={
-                                                shouldAnimate ? { animationDelay: `${index * 120}ms` } : undefined
+                                                shouldAnimate ? { animationDelay: `${index * 120}ms` } : { animationDelay: `${index * 50}ms` }
                                             }
                                             data-oid="9ofvvzi"
                                         >
                                             <button
                                                 type="button"
                                                 onClick={() => insertBeatAt(item.orderIndex)}
-                                                className="timeline-plus -top-5"
+                                                className="absolute left-1/2 -top-8 transform -translate-x-1/2 w-5 h-5 rounded-full bg-transparent text-white/70 text-xs font-semibold border border-white/30 hover:text-white hover:border-white/50 hover:bg-white/10 transition-all duration-200 z-20 flex items-center justify-center backdrop-blur-sm"
                                                 aria-label="Add beat above"
                                             >
                                                 +
                                             </button>
                                             <div
-                                                className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full border-4 border-gray-600 z-10"
+                                                className="absolute left-1/2 transform -translate-x-1/2 w-5 h-5 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full border-4 border-black/50 shadow-lg shadow-purple-500/50 z-10 animate-pulse-glow"
                                                 data-oid="2ru5:cv"
                                             ></div>
 
@@ -869,7 +871,7 @@ export default function Page() {
                                                         scriptSentence: e.target.value,
                                                     })
                                                 }
-                                                className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900 text-base resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] script-float"
+                                                className="comic-bubble w-full bg-white px-4 py-3 text-gray-900 text-base resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 min-h-[120px] transition-all duration-300"
                                                 rows={4}
                                                     data-oid="b7:ppa4"
                                                 />
@@ -891,7 +893,7 @@ export default function Page() {
 
                                         <div className="w-full lg:w-[38%] lg:pl-20 lg:ml-auto mt-4 lg:mt-0" data-oid="eb_nnht">
                                             <div
-                                                className="bg-gray-700/80 border border-gray-500 rounded-lg p-3 max-w-full lg:max-w-[220px]"
+                                                className="beat-card max-w-full lg:max-w-[320px]"
                                                 data-oid="ch93ky."
                                             >
                                                 <textarea
@@ -906,8 +908,9 @@ export default function Page() {
                                                             scenePrompt: e.target.value,
                                                         })
                                                     }
-                                                    className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2 min-h-[110px]"
+                                                    className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2 min-h-[110px] placeholder-gray-500"
                                                     rows={3}
+                                                    placeholder="Scene description..."
                                                     data-oid="qygv_f3"
                                                 />
 
@@ -928,7 +931,11 @@ export default function Page() {
                                                                         sceneType: 'IMAGE',
                                                                     });
                                                                 }}
-                                                                className={`p-2 rounded ${item.sceneType === 'IMAGE' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300'} transition-colors`}
+                                                                className={`p-2 rounded-lg transition-all duration-200 ${
+                                                                    item.sceneType === 'IMAGE' 
+                                                                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30' 
+                                                                        : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                                }`}
                                                                 data-oid="xala_yd"
                                                             >
                                                                 <svg
@@ -954,7 +961,11 @@ export default function Page() {
                                                                         sceneType: 'VIDEO',
                                                                     });
                                                                 }}
-                                                                className={`p-2 rounded ${item.sceneType === 'VIDEO' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300'} transition-colors`}
+                                                                className={`p-2 rounded-lg transition-all duration-200 ${
+                                                                    item.sceneType === 'VIDEO' 
+                                                                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30' 
+                                                                        : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                                }`}
                                                                 data-oid="kts976j"
                                                             >
                                                                 <svg
@@ -986,7 +997,7 @@ export default function Page() {
                                                                         selectedForGeneration: e.target.checked,
                                                                     });
                                                                 }}
-                                                                className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
+                                                                className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
                                                                 data-oid="9f.ebmx"
                                                             />
 
@@ -1001,7 +1012,7 @@ export default function Page() {
                                                 </div>
 
                                                 {item.assets && item.assets.length > 0 && (
-                                                    <div className="mt-3 space-y-2 max-w-full lg:max-w-[220px]">
+                                                    <div className="mt-3 space-y-2 max-w-full lg:max-w-[320px]">
                                                         {item.assets
                                                             .filter(
                                                                 (asset) =>
@@ -1042,23 +1053,25 @@ export default function Page() {
                     )}
 
                     <div className="mt-auto pt-10 flex flex-col items-center gap-4" data-oid="9alignl">
-                        {isGeneratingAssets && (
-                            <div className="progress-track w-48" data-oid="progress-line">
-                                <div className="progress-line"></div>
-                            </div>
-                        )}
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={handleGenerateAssets}
                                 disabled={!projectLoaded || isGeneratingAssets}
-                                className="bg-gradient-to-r from-blue-800 to-blue-900 hover:from-blue-900 hover:to-blue-950 text-white font-semibold py-4 px-8 rounded-full transition-all duration-200 shadow-2xl hover:shadow-3xl hover:scale-105 disabled:opacity-60"
+                                className="btn-glow py-4 px-8 rounded-full disabled:opacity-50 disabled:cursor-not-allowed relative"
                                 data-oid="l:e4:9b"
                             >
+                                {isGeneratingAssets && (
+                                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+                                        <div className="progress-track" data-oid="progress-line">
+                                            <div className="progress-line"></div>
+                                        </div>
+                                    </span>
+                                )}
                                 {isGeneratingAssets ? 'Generating...' : 'Generate Assets'}
                             </button>
                             {projectLoaded && hasAssets && (
                                 <a
-                                    className="bg-white/10 border border-white/20 text-white px-4 py-2 rounded-full text-sm hover:bg-white/20 transition-colors"
+                                    className="bg-white/10 border border-white/20 text-white px-6 py-3 rounded-full text-sm hover:bg-white/20 transition-all duration-300 backdrop-blur-sm hover:scale-105"
                                     href={`/api/projects/${projectId}/export.zip`}
                                     data-oid="download-zip"
                                 >
@@ -1070,11 +1083,11 @@ export default function Page() {
                 </div>
             </div>
             {hasAssets && (
-                <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2" data-oid="preview-controls">
+                <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 animate-slide-in-up" data-oid="preview-controls">
                     <button
                         type="button"
                         onClick={playPreview}
-                        className="text-white text-sm uppercase tracking-wide border border-white/40 px-6 py-2 rounded-full bg-black/70 backdrop-blur-md hover:bg-white/10 transition-colors"
+                        className="text-white text-sm uppercase tracking-wide border border-white/30 px-8 py-3 rounded-full bg-black/60 backdrop-blur-xl hover:bg-white/10 hover:border-white/50 transition-all duration-300 shadow-2xl hover:scale-105"
                     >
                         {isPreviewPlaying ? 'Pause' : isPreviewPaused ? 'Resume' : 'Play Preview'}
                     </button>
