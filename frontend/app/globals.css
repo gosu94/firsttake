@@ -428,20 +428,21 @@ input[type="checkbox"]:hover {
 
 .progress-line {
     @apply h-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600;
-    width: 100%;
-    animation: progressAnimation 2s ease-in-out infinite;
+    width: 45%;
+    animation: progressSweep 1.8s ease-in-out infinite;
     background-size: 200% 100%;
+    will-change: transform;
 }
 
-@keyframes progressAnimation {
+@keyframes progressSweep {
     0% {
-        background-position: 0% 50%;
+        transform: translateX(-60%);
     }
     50% {
-        background-position: 100% 50%;
+        transform: translateX(60%);
     }
     100% {
-        background-position: 0% 50%;
+        transform: translateX(-60%);
     }
 }
 
@@ -481,5 +482,4 @@ input[type="checkbox"]:hover {
     @apply ring-2 ring-purple-500/50;
     box-shadow: 0 4px 20px rgba(168, 85, 247, 0.2), 0 0 0 2px rgba(168, 85, 247, 0.1);
 }
-
 

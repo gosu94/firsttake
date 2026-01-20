@@ -19,6 +19,7 @@ type Beat = {
     scenePrompt: string;
     sceneType: 'IMAGE' | 'VIDEO';
     selectedForGeneration: boolean;
+    videoGenerateAudio: boolean;
     assets: Asset[];
 };
 
@@ -220,6 +221,7 @@ export default function Page() {
                 scenePrompt: updates.scenePrompt,
                 sceneType: updates.sceneType,
                 selectedForGeneration: updates.selectedForGeneration,
+                videoGenerateAudio: updates.videoGenerateAudio,
             }),
         });
     };
@@ -307,6 +309,7 @@ export default function Page() {
                 scenePrompt: '',
                 sceneType: 'IMAGE',
                 selectedForGeneration: true,
+                videoGenerateAudio: false,
             }),
         });
         await loadProject(activeProjectId);
@@ -968,9 +971,9 @@ export default function Page() {
                                                 )}
                                             </div>
 
-                                        <div className="w-full lg:w-[38%] lg:pl-20 lg:ml-auto mt-4 lg:mt-0" data-oid="eb_nnht">
+                                        <div className="w-full lg:w-[44%] lg:pl-16 lg:ml-auto mt-4 lg:mt-0" data-oid="eb_nnht">
                                             <div
-                                                className="beat-card max-w-full lg:max-w-[320px]"
+                                                className="beat-card max-w-full lg:max-w-[380px]"
                                                 data-oid="ch93ky."
                                             >
                                                 <textarea
@@ -985,7 +988,7 @@ export default function Page() {
                                                             scenePrompt: e.target.value,
                                                         })
                                                     }
-                                                    className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2 min-h-[110px] placeholder-gray-500"
+                                                    className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2 min-h-[90px] placeholder-gray-500"
                                                     rows={3}
                                                     placeholder="Scene description..."
                                                     data-oid="qygv_f3"
@@ -1059,32 +1062,52 @@ export default function Page() {
                                                             </button>
                                                         </div>
 
-                                                        <label
-                                                            className="flex items-center"
-                                                            data-oid="ju:z5n_"
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={item.selectedForGeneration}
-                                                                onChange={(e) => {
-                                                                    updateBeatLocal(item.id, {
-                                                                        selectedForGeneration: e.target.checked,
-                                                                    });
-                                                                    void updateBeat(item.id, {
-                                                                        selectedForGeneration: e.target.checked,
-                                                                    });
-                                                                }}
-                                                                className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
-                                                                data-oid="9f.ebmx"
-                                                            />
-
-                                                            <span
-                                                                className="ml-2 text-sm text-gray-300"
-                                                                data-oid="se:a9jt"
+                                                        <div className="flex items-center gap-4">
+                                                            {item.sceneType === 'VIDEO' && (
+                                                                <label className="flex items-center text-xs text-gray-300">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={item.videoGenerateAudio}
+                                                                        onChange={(e) => {
+                                                                            updateBeatLocal(item.id, {
+                                                                                videoGenerateAudio: e.target.checked,
+                                                                            });
+                                                                            void updateBeat(item.id, {
+                                                                                videoGenerateAudio: e.target.checked,
+                                                                            });
+                                                                        }}
+                                                                        className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
+                                                                    />
+                                                                    <span className="ml-2">Sound</span>
+                                                                </label>
+                                                            )}
+                                                            <label
+                                                                className="flex items-center"
+                                                                data-oid="ju:z5n_"
                                                             >
-                                                                Generate
-                                                            </span>
-                                                        </label>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={item.selectedForGeneration}
+                                                                    onChange={(e) => {
+                                                                        updateBeatLocal(item.id, {
+                                                                            selectedForGeneration: e.target.checked,
+                                                                        });
+                                                                        void updateBeat(item.id, {
+                                                                            selectedForGeneration: e.target.checked,
+                                                                        });
+                                                                    }}
+                                                                    className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
+                                                                    data-oid="9f.ebmx"
+                                                                />
+
+                                                                <span
+                                                                    className="ml-2 text-sm text-gray-300"
+                                                                    data-oid="se:a9jt"
+                                                                >
+                                                                    Generate
+                                                                </span>
+                                                            </label>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -1188,16 +1211,9 @@ export default function Page() {
                             <div>
                                 Beat {previewIndex + 1} of {beats.length}
                             </div>
-                            <button
-                                type="button"
-                                onClick={playPreview}
-                                className="rounded-full border border-white/30 px-4 py-1 text-xs uppercase tracking-wide text-white/80 hover:text-white hover:border-white/60"
-                            >
-                                {isPreviewPlaying ? 'Pause' : isPreviewPaused ? 'Resume' : 'Play'}
-                            </button>
                         </div>
                         <div
-                            className="flex items-center justify-center rounded-xl bg-black"
+                            className="mx-auto flex items-center justify-center rounded-xl bg-black"
                             style={
                                 format === '9:16'
                                     ? { aspectRatio: '9 / 16', maxHeight: '65vh', maxWidth: '45vw' }
@@ -1232,6 +1248,15 @@ export default function Page() {
                                     />
                                 );
                             })()}
+                        </div>
+                        <div className="mt-6 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={playPreview}
+                                className="rounded-full border border-white/30 px-6 py-2 text-xs uppercase tracking-wide text-white/80 hover:text-white hover:border-white/60"
+                            >
+                                {isPreviewPlaying ? 'Pause' : isPreviewPaused ? 'Resume' : 'Play'}
+                            </button>
                         </div>
                     </div>
                 </div>

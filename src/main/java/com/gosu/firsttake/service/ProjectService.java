@@ -1,5 +1,9 @@
 package com.gosu.firsttake.service;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.gosu.firsttake.ai.nanobanana.NanoBananaForm;
 import com.gosu.firsttake.ai.nanobanana.NanoBananaResult;
 import com.gosu.firsttake.ai.nanobanana.NanoBananaService;
@@ -23,10 +27,10 @@ import com.gosu.firsttake.domain.TimelineBeat;
 import com.gosu.firsttake.repository.GeneratedAssetRepository;
 import com.gosu.firsttake.repository.ProjectRepository;
 import com.gosu.firsttake.repository.TimelineBeatRepository;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
@@ -35,12 +39,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -56,15 +57,15 @@ public class ProjectService {
     private final ExecutorService aiExecutor;
 
     public ProjectService(
-        DefaultUserService defaultUserService,
-        ProjectRepository projectRepository,
-        TimelineBeatRepository beatRepository,
-        GeneratedAssetRepository assetRepository,
-        OpenRouterService openRouterService,
-        TtsService ttsService,
-        NanoBananaService nanoBananaService,
-        Veo3FastService veo3FastService,
-        ExecutorService aiExecutor
+            DefaultUserService defaultUserService,
+            ProjectRepository projectRepository,
+            TimelineBeatRepository beatRepository,
+            GeneratedAssetRepository assetRepository,
+            OpenRouterService openRouterService,
+            TtsService ttsService,
+            NanoBananaService nanoBananaService,
+            Veo3FastService veo3FastService,
+            ExecutorService aiExecutor
     ) {
         this.defaultUserService = defaultUserService;
         this.projectRepository = projectRepository;
@@ -81,8 +82,8 @@ public class ProjectService {
     public List<ProjectDtos.ProjectSummary> listProjects() {
         AppUser user = defaultUserService.getOrCreateDefaultUser();
         return projectRepository.findByUserIdOrderByCreatedAtAsc(user.getId()).stream()
-            .map(this::toSummary)
-            .toList();
+                .map(this::toSummary)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -146,6 +147,9 @@ public class ProjectService {
         if (request.selectedForGeneration() != null) {
             beat.setSelectedForGeneration(request.selectedForGeneration());
         }
+        if (request.videoGenerateAudio() != null) {
+            beat.setVideoGenerateAudio(request.videoGenerateAudio());
+        }
         beatRepository.save(beat);
         return toBeatDetail(beat, List.of());
     }
@@ -153,7 +157,7 @@ public class ProjectService {
     @Transactional
     public ProjectDtos.BeatDetail updateBeat(Long beatId, ProjectRequests.BeatUpdate request) {
         TimelineBeat beat = beatRepository.findById(beatId)
-            .orElseThrow(() -> new IllegalArgumentException("Beat not found."));
+                .orElseThrow(() -> new IllegalArgumentException("Beat not found."));
         if (request.orderIndex() != null) {
             beat.setOrderIndex(request.orderIndex());
         }
@@ -169,11 +173,14 @@ public class ProjectService {
         if (request.selectedForGeneration() != null) {
             beat.setSelectedForGeneration(request.selectedForGeneration());
         }
+        if (request.videoGenerateAudio() != null) {
+            beat.setVideoGenerateAudio(request.videoGenerateAudio());
+        }
         beatRepository.save(beat);
         List<ProjectDtos.AssetDetail> assets = assetRepository.findByBeatIdIn(List.of(beatId)).stream()
-            .sorted(Comparator.comparing(GeneratedAsset::getCreatedAt))
-            .map(this::toAssetDetail)
-            .toList();
+                .sorted(Comparator.comparing(GeneratedAsset::getCreatedAt))
+                .map(this::toAssetDetail)
+                .toList();
         return toBeatDetail(beat, assets);
     }
 
@@ -226,6 +233,7 @@ public class ProjectService {
             beat.setScenePrompt(scriptBeat.scenePrompt());
             beat.setSceneType(SceneType.IMAGE);
             beat.setSelectedForGeneration(true);
+            beat.setVideoGenerateAudio(false);
             saved.add(beat);
         }
         beatRepository.saveAll(saved);
@@ -237,15 +245,16 @@ public class ProjectService {
         Project project = getProjectForDefaultUser(projectId);
         List<TimelineBeat> beats = beatRepository.findByProjectIdOrderByOrderIndexAsc(projectId);
         List<BeatSnapshot> snapshots = beats.stream()
-            .map(beat -> new BeatSnapshot(
-                beat.getId(),
-                beat.getOrderIndex(),
-                beat.getScriptSentence(),
-                beat.getScenePrompt(),
-                beat.getSceneType(),
-                beat.isSelectedForGeneration()
-            ))
-            .toList();
+                .map(beat -> new BeatSnapshot(
+                        beat.getId(),
+                        beat.getOrderIndex(),
+                        beat.getScriptSentence(),
+                        beat.getScenePrompt(),
+                        beat.getSceneType(),
+                        beat.isSelectedForGeneration(),
+                        beat.isVideoGenerateAudio()
+                ))
+                .toList();
         String aspectRatio = request != null ? request.aspectRatio() : null;
 
         for (BeatSnapshot beat : snapshots) {
@@ -265,28 +274,28 @@ public class ProjectService {
             }
             if (beat.scenePrompt() != null && !beat.scenePrompt().isBlank()) {
                 futures.add(CompletableFuture.supplyAsync(
-                    () -> toResult(beat.id(), generateSceneAsset(beat, aspectRatio, project.getVisualStylePrompt())),
-                    aiExecutor
+                        () -> toResult(beat.id(), generateSceneAsset(beat, aspectRatio, project)),
+                        aiExecutor
                 ).handle((result, ex) -> handleAssetFailure(result, ex, beat.id(), beat.sceneType() == SceneType.IMAGE ? AssetType.IMAGE : AssetType.VIDEO)));
             }
         }
 
         Map<Long, TimelineBeat> beatMap = beats.stream()
-            .collect(Collectors.toMap(TimelineBeat::getId, beat -> beat));
+                .collect(Collectors.toMap(TimelineBeat::getId, beat -> beat));
         List<GeneratedAssetResult> results = futures.stream()
-            .map(CompletableFuture::join)
-            .filter(result -> result != null && result.asset() != null)
-            .collect(Collectors.toCollection(ArrayList::new));
+                .map(CompletableFuture::join)
+                .filter(result -> result != null && result.asset() != null)
+                .collect(Collectors.toCollection(ArrayList::new));
         if (audioResult != null && audioResult.asset() != null) {
             results.add(audioResult);
         }
         List<GeneratedAsset> newAssets = results.stream()
-            .map(result -> {
-                GeneratedAsset asset = result.asset();
-                asset.setBeat(beatMap.get(result.beatId()));
-                return asset;
-            })
-            .toList();
+                .map(result -> {
+                    GeneratedAsset asset = result.asset();
+                    asset.setBeat(beatMap.get(result.beatId()));
+                    return asset;
+                })
+                .toList();
         if (!newAssets.isEmpty()) {
             assetRepository.saveAll(newAssets);
         }
@@ -318,9 +327,9 @@ public class ProjectService {
 
     private GeneratedAssetResult generateCombinedAudio(Project project, List<BeatSnapshot> snapshots) {
         List<BeatSnapshot> ordered = snapshots.stream()
-            .filter(beat -> beat.scriptSentence() != null && !beat.scriptSentence().isBlank())
-            .sorted(Comparator.comparingInt(BeatSnapshot::orderIndex))
-            .toList();
+                .filter(beat -> beat.scriptSentence() != null && !beat.scriptSentence().isBlank())
+                .sorted(Comparator.comparingInt(BeatSnapshot::orderIndex))
+                .toList();
         if (ordered.isEmpty()) {
             return null;
         }
@@ -339,15 +348,15 @@ public class ProjectService {
         return new GeneratedAssetResult(first.id(), asset);
     }
 
-    private GeneratedAsset generateSceneAsset(BeatSnapshot beat, String aspectRatio, String visualStylePrompt) {
+    private GeneratedAsset generateSceneAsset(BeatSnapshot beat, String aspectRatio, Project project) {
         if (beat.scenePrompt() == null || beat.scenePrompt().isBlank()) {
             return null;
         }
-        String combinedPrompt = applyVisualStyle(beat.scenePrompt(), visualStylePrompt);
+        String combinedPrompt = buildVisualPrompt(beat, project);
         if (beat.sceneType() == SceneType.VIDEO) {
             Veo3FastRequest request = new Veo3FastRequest();
             request.setPrompt(combinedPrompt);
-            request.setGenerateAudio(false);
+            request.setGenerateAudio(beat.videoGenerateAudio());
             if (aspectRatio != null && !aspectRatio.isBlank()) {
                 request.setAspectRatio(aspectRatio);
             }
@@ -384,35 +393,35 @@ public class ProjectService {
     private Project getProjectForDefaultUser(Long projectId) {
         AppUser user = defaultUserService.getOrCreateDefaultUser();
         return projectRepository.findByIdAndUserId(projectId, user.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Project not found."));
+                .orElseThrow(() -> new IllegalArgumentException("Project not found."));
     }
 
     private ProjectDtos.ProjectSummary toSummary(Project project) {
         return new ProjectDtos.ProjectSummary(
-            project.getId(),
-            project.getName(),
-            project.getGeneralPrompt(),
-            project.getTone(),
-            project.getNarratorVoice(),
-            project.getNarratorVoicePrompt(),
-            project.getVisualStylePrompt(),
-            project.getCreatedAt(),
-            project.getUpdatedAt()
+                project.getId(),
+                project.getName(),
+                project.getGeneralPrompt(),
+                project.getTone(),
+                project.getNarratorVoice(),
+                project.getNarratorVoicePrompt(),
+                project.getVisualStylePrompt(),
+                project.getCreatedAt(),
+                project.getUpdatedAt()
         );
     }
 
     private ProjectDtos.ProjectDetail toDetail(Project project, List<ProjectDtos.BeatDetail> beats) {
         return new ProjectDtos.ProjectDetail(
-            project.getId(),
-            project.getName(),
-            project.getGeneralPrompt(),
-            project.getTone(),
-            project.getNarratorVoice(),
-            project.getNarratorVoicePrompt(),
-            project.getVisualStylePrompt(),
-            project.getCreatedAt(),
-            project.getUpdatedAt(),
-            beats
+                project.getId(),
+                project.getName(),
+                project.getGeneralPrompt(),
+                project.getTone(),
+                project.getNarratorVoice(),
+                project.getNarratorVoicePrompt(),
+                project.getVisualStylePrompt(),
+                project.getCreatedAt(),
+                project.getUpdatedAt(),
+                beats
         );
     }
 
@@ -422,42 +431,43 @@ public class ProjectService {
         if (!beatIds.isEmpty()) {
             List<GeneratedAsset> assets = assetRepository.findByBeatIdIn(beatIds);
             assetMap = assets.stream()
-                .sorted(Comparator.comparing(GeneratedAsset::getCreatedAt))
-                .collect(Collectors.groupingBy(
-                    asset -> asset.getBeat().getId(),
-                    Collectors.mapping(this::toAssetDetail, Collectors.toList())
-                ));
+                    .sorted(Comparator.comparing(GeneratedAsset::getCreatedAt))
+                    .collect(Collectors.groupingBy(
+                            asset -> asset.getBeat().getId(),
+                            Collectors.mapping(this::toAssetDetail, Collectors.toList())
+                    ));
         }
         Map<Long, List<ProjectDtos.AssetDetail>> finalAssetMap = assetMap;
         return beats.stream()
-            .sorted(Comparator.comparingInt(TimelineBeat::getOrderIndex))
-            .map(beat -> toBeatDetail(beat, finalAssetMap.getOrDefault(beat.getId(), List.of())))
-            .toList();
+                .sorted(Comparator.comparingInt(TimelineBeat::getOrderIndex))
+                .map(beat -> toBeatDetail(beat, finalAssetMap.getOrDefault(beat.getId(), List.of())))
+                .toList();
     }
 
     private ProjectDtos.BeatDetail toBeatDetail(TimelineBeat beat, List<ProjectDtos.AssetDetail> assets) {
         return new ProjectDtos.BeatDetail(
-            beat.getId(),
-            beat.getOrderIndex(),
-            beat.getScriptSentence(),
-            beat.getScenePrompt(),
-            beat.getSceneType().name(),
-            beat.isSelectedForGeneration(),
-            beat.getCreatedAt(),
-            beat.getUpdatedAt(),
-            assets
+                beat.getId(),
+                beat.getOrderIndex(),
+                beat.getScriptSentence(),
+                beat.getScenePrompt(),
+                beat.getSceneType().name(),
+                beat.isSelectedForGeneration(),
+                beat.isVideoGenerateAudio(),
+                beat.getCreatedAt(),
+                beat.getUpdatedAt(),
+                assets
         );
     }
 
     private ProjectDtos.AssetDetail toAssetDetail(GeneratedAsset asset) {
         return new ProjectDtos.AssetDetail(
-            asset.getId(),
-            asset.getAssetType().name(),
-            asset.getUrl(),
-            asset.getProvider(),
-            asset.getMimeType(),
-            asset.getDurationSeconds(),
-            asset.getCreatedAt()
+                asset.getId(),
+                asset.getAssetType().name(),
+                asset.getUrl(),
+                asset.getProvider(),
+                asset.getMimeType(),
+                asset.getDurationSeconds(),
+                asset.getCreatedAt()
         );
     }
 
@@ -601,11 +611,18 @@ public class ProjectService {
         return "data:" + mimeType + ";base64," + encoded;
     }
 
-    private String applyVisualStyle(String scenePrompt, String visualStylePrompt) {
-        if (visualStylePrompt == null || visualStylePrompt.isBlank()) {
-            return scenePrompt;
+    private String buildVisualPrompt(BeatSnapshot beat, Project project) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(beat.scenePrompt().trim());
+        if (project.getTone() != null && !project.getTone().isBlank()) {
+            builder.append("\nOverall tone: ").append(project.getTone().trim());
         }
-        return scenePrompt + "\nStyle: " + visualStylePrompt.trim();
+        if (project.getVisualStylePrompt() != null && !project.getVisualStylePrompt().isBlank()) {
+            builder.append("\nVisual style: ").append(project.getVisualStylePrompt().trim());
+        }
+        builder.append("\nDo not include labels or on-screen text unless explicitly requested in the main prompt.");
+        builder.append("\nKeep visual continuity across beats with consistent setting, palette, and lighting.");
+        return builder.toString();
     }
 
     private record ScriptBeat(String sentence, String scenePrompt) {
@@ -630,12 +647,13 @@ public class ProjectService {
     }
 
     private record BeatSnapshot(
-        Long id,
-        int orderIndex,
-        String scriptSentence,
-        String scenePrompt,
-        SceneType sceneType,
-        boolean selectedForGeneration
+            Long id,
+            int orderIndex,
+            String scriptSentence,
+            String scenePrompt,
+            SceneType sceneType,
+            boolean selectedForGeneration,
+            boolean videoGenerateAudio
     ) {
     }
 }

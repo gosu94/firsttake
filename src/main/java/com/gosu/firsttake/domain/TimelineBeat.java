@@ -42,6 +42,9 @@ public class TimelineBeat {
     @Column(nullable = false)
     private boolean selectedForGeneration = true;
 
+    @Column(nullable = false)
+    private boolean videoGenerateAudio = false;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -118,6 +121,14 @@ public class TimelineBeat {
 
     public void setSelectedForGeneration(boolean selectedForGeneration) {
         this.selectedForGeneration = selectedForGeneration;
+    }
+
+    public boolean isVideoGenerateAudio() {
+        return videoGenerateAudio;
+    }
+
+    public void setVideoGenerateAudio(boolean videoGenerateAudio) {
+        this.videoGenerateAudio = videoGenerateAudio;
     }
 
     public Instant getCreatedAt() {
