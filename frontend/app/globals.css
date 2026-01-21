@@ -446,6 +446,22 @@ input[type="checkbox"]:hover {
     }
 }
 
+/* Preview image motion */
+.preview-zoom {
+    animation: previewZoom 6s ease-in-out forwards;
+    transform-origin: center;
+    will-change: transform;
+}
+
+@keyframes previewZoom {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1.08);
+    }
+}
+
 /* Comic book speech bubble */
 .comic-bubble {
     @apply relative bg-white rounded-2xl px-4 py-3 shadow-lg;
@@ -482,4 +498,3 @@ input[type="checkbox"]:hover {
     @apply ring-2 ring-purple-500/50;
     box-shadow: 0 4px 20px rgba(168, 85, 247, 0.2), 0 0 0 2px rgba(168, 85, 247, 0.1);
 }
-

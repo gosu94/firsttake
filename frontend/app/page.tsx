@@ -317,21 +317,25 @@ export default function Page() {
 
     const clearPreviewTimer = () => {
         if (previewTimerRef.current) {
-            window.clearInterval(previewTimerRef.current);
+            window.clearTimeout(previewTimerRef.current);
             previewTimerRef.current = null;
         }
     };
 
-    const startPreviewTimer = (stepMs: number) => {
+    const advancePreview = () => {
+        setPreviewIndex(previewIndexRef.current);
+        previewIndexRef.current += 1;
+        if (previewIndexRef.current >= beats.length) {
+            clearPreviewTimer();
+            setIsPreviewPlaying(false);
+            setIsPreviewPaused(false);
+        }
+    };
+
+    const schedulePreviewStep = (stepMs: number) => {
         clearPreviewTimer();
-        previewTimerRef.current = window.setInterval(() => {
-            setPreviewIndex(previewIndexRef.current);
-            previewIndexRef.current += 1;
-            if (previewIndexRef.current >= beats.length) {
-                clearPreviewTimer();
-                setIsPreviewPlaying(false);
-                setIsPreviewPaused(false);
-            }
+        previewTimerRef.current = window.setTimeout(() => {
+            advancePreview();
         }, stepMs);
     };
 
@@ -377,7 +381,6 @@ export default function Page() {
                 );
                 setPreviewIndex(previewIndexRef.current);
                 previewIndexRef.current += 1;
-                startPreviewTimer(stepMs);
             }
             setIsPreviewPlaying(true);
             setIsPreviewPaused(false);
@@ -418,11 +421,37 @@ export default function Page() {
                 previewIndexRef.current = 0;
                 setPreviewIndex(0);
                 previewIndexRef.current = 1;
-                startPreviewTimer(stepMs);
+                const beat = beats[0];
+                const asset = beat?.assets?.find(
+                    (item) => item.assetType === 'IMAGE' || item.assetType === 'VIDEO',
+                );
+                if (asset?.assetType !== 'VIDEO') {
+                    schedulePreviewStep(stepMs);
+                }
             };
             void audio.play();
         }, 100);
     };
+
+    useEffect(() => {
+        if (!isPreviewPlaying) {
+            clearPreviewTimer();
+            return;
+        }
+        const stepMs = previewStepMsRef.current;
+        if (!stepMs) {
+            return;
+        }
+        const beat = beats[previewIndex];
+        const asset = beat?.assets?.find(
+            (item) => item.assetType === 'IMAGE' || item.assetType === 'VIDEO',
+        );
+        if (asset?.assetType === 'VIDEO') {
+            clearPreviewTimer();
+            return;
+        }
+        schedulePreviewStep(stepMs);
+    }, [beats, isPreviewPlaying, previewIndex]);
 
     const playVoiceSample = (voiceId: string) => {
         if (audioRef.current) {
@@ -1213,7 +1242,7 @@ export default function Page() {
                             </div>
                         </div>
                         <div
-                            className="mx-auto flex items-center justify-center rounded-xl bg-black"
+                            className="mx-auto flex items-center justify-center rounded-xl bg-black overflow-hidden"
                             style={
                                 format === '9:16'
                                     ? { aspectRatio: '9 / 16', maxHeight: '65vh', maxWidth: '45vw' }
@@ -1237,14 +1266,20 @@ export default function Page() {
                                             autoPlay
                                             muted
                                             playsInline
+                                            onEnded={() => {
+                                                if (isPreviewPlaying) {
+                                                    advancePreview();
+                                                }
+                                            }}
                                         />
                                     );
                                 }
                                 return (
                                     <img
+                                        key={`preview-image-${asset.id}-${previewIndex}`}
                                         src={asset.url}
                                         alt="Generated scene"
-                                        className="max-h-full max-w-full rounded-lg"
+                                        className={`max-h-full max-w-full rounded-lg ${isPreviewPlaying ? 'preview-zoom' : ''}`}
                                     />
                                 );
                             })()}
