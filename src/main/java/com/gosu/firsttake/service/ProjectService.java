@@ -492,6 +492,7 @@ public class ProjectService {
         StringBuilder builder = new StringBuilder();
         builder.append("Generate an ad script as JSON only. Return a JSON array of objects.\n");
         builder.append("Each object must have fields: sentence, scenePrompt.\n");
+        builder.append("ScenePrompt should be 4-5 sentences with concrete visual details for each beat.\n");
         builder.append("Number of beats: ").append(count).append(".\n");
         if (resolvedDuration != null) {
             builder.append("Target narration duration: ").append(resolvedDuration).append(" seconds.\n");
