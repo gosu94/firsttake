@@ -1019,7 +1019,7 @@ export default function Page() {
                                                         />
                                                     </label>
                                                     <div
-                                                        className="beat-card max-w-full lg:max-w-[380px]"
+                                                        className="beat-card w-full max-w-full lg:max-w-[520px]"
                                                         data-oid="ch93ky."
                                                     >
                                                         <textarea
