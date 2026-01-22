@@ -619,7 +619,7 @@ export default function Page() {
                                     onBlur={() => updateProject({ generalPrompt: prompt })}
                                     className="textarea-glossy"
                                     rows={4}
-                                    placeholder="Describe your ad concept..."
+                                    placeholder="Describe your ad concept (use any language you want)..."
                                     data-oid="t4hqnd2"
                                 />
                             </div>
@@ -967,21 +967,21 @@ export default function Page() {
                                                 </button>
                                             </div>
 
-                                        <div className="w-full lg:w-[42%] lg:pr-12" data-oid="_4c6a4t">
-                                            <textarea
-                                                value={item.scriptSentence ?? ''}
-                                                onChange={(e) =>
-                                                    updateBeatLocal(item.id, {
-                                                        scriptSentence: e.target.value,
-                                                    })
-                                                }
-                                                onBlur={(e) =>
-                                                    void updateBeat(item.id, {
-                                                        scriptSentence: e.target.value,
-                                                    })
-                                                }
-                                                className="comic-bubble w-full bg-white px-4 py-3 text-gray-900 text-base resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 min-h-[120px] transition-all duration-300"
-                                                rows={4}
+                                            <div className="w-full lg:w-[42%] lg:pr-12" data-oid="_4c6a4t">
+                                                <textarea
+                                                    value={item.scriptSentence ?? ''}
+                                                    onChange={(e) =>
+                                                        updateBeatLocal(item.id, {
+                                                            scriptSentence: e.target.value,
+                                                        })
+                                                    }
+                                                    onBlur={(e) =>
+                                                        void updateBeat(item.id, {
+                                                            scriptSentence: e.target.value,
+                                                        })
+                                                    }
+                                                    className="comic-bubble w-full bg-white px-4 py-3 text-gray-900 text-base resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 min-h-[120px] transition-all duration-300"
+                                                    rows={4}
                                                     data-oid="b7:ppa4"
                                                 />
                                                 {item.assets && item.assets.length > 0 && (
@@ -1000,142 +1000,134 @@ export default function Page() {
                                                 )}
                                             </div>
 
-                                        <div className="w-full lg:w-[44%] lg:pl-16 lg:ml-auto mt-4 lg:mt-0" data-oid="eb_nnht">
-                                            <div
-                                                className="beat-card max-w-full lg:max-w-[380px]"
-                                                data-oid="ch93ky."
-                                            >
-                                                <textarea
-                                                    value={item.scenePrompt ?? ''}
-                                                    onChange={(e) =>
-                                                        updateBeatLocal(item.id, {
-                                                            scenePrompt: e.target.value,
-                                                        })
-                                                    }
-                                                    onBlur={(e) =>
-                                                        void updateBeat(item.id, {
-                                                            scenePrompt: e.target.value,
-                                                        })
-                                                    }
-                                                    className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2 min-h-[90px] placeholder-gray-500"
-                                                    rows={3}
-                                                    placeholder="Scene description..."
-                                                    data-oid="qygv_f3"
-                                                />
-
+                                            <div className="w-full lg:w-[44%] lg:pl-16 lg:ml-auto mt-4 lg:mt-0" data-oid="eb_nnht">
+                                                <div className="flex items-center gap-3">
+                                                    <label className="flex items-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={item.selectedForGeneration}
+                                                            onChange={(e) => {
+                                                                updateBeatLocal(item.id, {
+                                                                    selectedForGeneration: e.target.checked,
+                                                                });
+                                                                void updateBeat(item.id, {
+                                                                    selectedForGeneration: e.target.checked,
+                                                                });
+                                                            }}
+                                                            className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
+                                                            data-oid="9f.ebmx"
+                                                        />
+                                                    </label>
                                                     <div
-                                                        className="flex items-center justify-between"
-                                                        data-oid="whb5y5n"
+                                                        className="beat-card max-w-full lg:max-w-[380px]"
+                                                        data-oid="ch93ky."
                                                     >
-                                                        <div
-                                                            className="flex items-center space-x-2"
-                                                            data-oid="pm:s-l."
-                                                        >
-                                                            <button
-                                                                onClick={() => {
-                                                                    updateBeatLocal(item.id, {
-                                                                        sceneType: 'IMAGE',
-                                                                    });
-                                                                    void updateBeat(item.id, {
-                                                                        sceneType: 'IMAGE',
-                                                                    });
-                                                                }}
-                                                                className={`p-2 rounded-lg transition-all duration-200 ${
-                                                                    item.sceneType === 'IMAGE' 
-                                                                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30' 
-                                                                        : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                                                                }`}
-                                                                data-oid="xala_yd"
-                                                            >
-                                                                <svg
-                                                                    className="w-4 h-4"
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                    data-oid="hcx6m:8"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                                                                        clipRule="evenodd"
-                                                                        data-oid="tcta3yx"
-                                                                    />
-                                                                </svg>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    updateBeatLocal(item.id, {
-                                                                        sceneType: 'VIDEO',
-                                                                    });
-                                                                    void updateBeat(item.id, {
-                                                                        sceneType: 'VIDEO',
-                                                                    });
-                                                                }}
-                                                                className={`p-2 rounded-lg transition-all duration-200 ${
-                                                                    item.sceneType === 'VIDEO' 
-                                                                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30' 
-                                                                        : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                                                                }`}
-                                                                data-oid="kts976j"
-                                                            >
-                                                                <svg
-                                                                    className="w-4 h-4"
-                                                                    fill="currentColor"
-                                                                    viewBox="0 0 20 20"
-                                                                    data-oid="gdb.qwi"
-                                                                >
-                                                                    <path
-                                                                        d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"
-                                                                        data-oid="sg-p0wq"
-                                                                    />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
+                                                        <textarea
+                                                            value={item.scenePrompt ?? ''}
+                                                            onChange={(e) =>
+                                                                updateBeatLocal(item.id, {
+                                                                    scenePrompt: e.target.value,
+                                                                })
+                                                            }
+                                                            onBlur={(e) =>
+                                                                void updateBeat(item.id, {
+                                                                    scenePrompt: e.target.value,
+                                                                })
+                                                            }
+                                                            className="w-full bg-transparent text-white text-xs resize-none focus:outline-none mb-2 min-h-[90px] placeholder-gray-500"
+                                                            rows={3}
+                                                            placeholder="Scene description..."
+                                                            data-oid="qygv_f3"
+                                                        />
 
-                                                        <div className="flex items-center gap-4">
-                                                            {item.sceneType === 'VIDEO' && (
-                                                                <label className="flex items-center text-xs text-gray-300">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={item.videoGenerateAudio}
-                                                                        onChange={(e) => {
-                                                                            updateBeatLocal(item.id, {
-                                                                                videoGenerateAudio: e.target.checked,
-                                                                            });
-                                                                            void updateBeat(item.id, {
-                                                                                videoGenerateAudio: e.target.checked,
-                                                                            });
-                                                                        }}
-                                                                        className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
-                                                                    />
-                                                                    <span className="ml-2">Sound</span>
-                                                                </label>
-                                                            )}
-                                                            <label
-                                                                className="flex items-center"
-                                                                data-oid="ju:z5n_"
+                                                        <div
+                                                            className="flex items-center justify-between"
+                                                            data-oid="whb5y5n"
+                                                        >
+                                                            <div
+                                                                className="flex items-center space-x-2"
+                                                                data-oid="pm:s-l."
                                                             >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={item.selectedForGeneration}
-                                                                    onChange={(e) => {
+                                                                <button
+                                                                    onClick={() => {
                                                                         updateBeatLocal(item.id, {
-                                                                            selectedForGeneration: e.target.checked,
+                                                                            sceneType: 'IMAGE',
                                                                         });
                                                                         void updateBeat(item.id, {
-                                                                            selectedForGeneration: e.target.checked,
+                                                                            sceneType: 'IMAGE',
                                                                         });
                                                                     }}
-                                                                    className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
-                                                                    data-oid="9f.ebmx"
-                                                                />
-
-                                                                <span
-                                                                    className="ml-2 text-sm text-gray-300"
-                                                                    data-oid="se:a9jt"
+                                                                    className={`p-2 rounded-lg transition-all duration-200 ${
+                                                                        item.sceneType === 'IMAGE'
+                                                                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30'
+                                                                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                                    }`}
+                                                                    data-oid="xala_yd"
                                                                 >
-                                                                    Generate
-                                                                </span>
-                                                            </label>
+                                                                    <svg
+                                                                        className="w-4 h-4"
+                                                                        fill="currentColor"
+                                                                        viewBox="0 0 20 20"
+                                                                        data-oid="hcx6m:8"
+                                                                    >
+                                                                        <path
+                                                                            fillRule="evenodd"
+                                                                            d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                                                                            clipRule="evenodd"
+                                                                            data-oid="tcta3yx"
+                                                                        />
+                                                                    </svg>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        updateBeatLocal(item.id, {
+                                                                            sceneType: 'VIDEO',
+                                                                        });
+                                                                        void updateBeat(item.id, {
+                                                                            sceneType: 'VIDEO',
+                                                                        });
+                                                                    }}
+                                                                    className={`p-2 rounded-lg transition-all duration-200 ${
+                                                                        item.sceneType === 'VIDEO'
+                                                                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30'
+                                                                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                                    }`}
+                                                                    data-oid="kts976j"
+                                                                >
+                                                                    <svg
+                                                                        className="w-4 h-4"
+                                                                        fill="currentColor"
+                                                                        viewBox="0 0 20 20"
+                                                                        data-oid="gdb.qwi"
+                                                                    >
+                                                                        <path
+                                                                            d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"
+                                                                            data-oid="sg-p0wq"
+                                                                        />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-4">
+                                                                {item.sceneType === 'VIDEO' && (
+                                                                    <label className="flex items-center text-xs text-gray-300">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={item.videoGenerateAudio}
+                                                                            onChange={(e) => {
+                                                                                updateBeatLocal(item.id, {
+                                                                                    videoGenerateAudio: e.target.checked,
+                                                                                });
+                                                                                void updateBeat(item.id, {
+                                                                                    videoGenerateAudio: e.target.checked,
+                                                                                });
+                                                                            }}
+                                                                            className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
+                                                                        />
+                                                                        <span className="ml-2">Sound</span>
+                                                                    </label>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
