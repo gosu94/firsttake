@@ -16,6 +16,7 @@ export type Beat = {
     sceneType: 'IMAGE' | 'VIDEO';
     selectedForGeneration: boolean;
     videoGenerateAudio: boolean;
+    videoModel?: 'VEO3_FAST' | 'SORA';
     assets: Asset[];
 };
 

@@ -10,6 +10,9 @@ import com.gosu.firsttake.ai.nanobanana.NanoBananaService;
 import com.gosu.firsttake.ai.openrouter.OpenRouterRequest;
 import com.gosu.firsttake.ai.openrouter.OpenRouterResult;
 import com.gosu.firsttake.ai.openrouter.OpenRouterService;
+import com.gosu.firsttake.ai.sora.SoraRequest;
+import com.gosu.firsttake.ai.sora.SoraResult;
+import com.gosu.firsttake.ai.sora.SoraService;
 import com.gosu.firsttake.ai.tts.TtsRequest;
 import com.gosu.firsttake.ai.tts.TtsResult;
 import com.gosu.firsttake.ai.tts.TtsService;
@@ -54,6 +57,7 @@ public class ProjectService {
     private final TtsService ttsService;
     private final NanoBananaService nanoBananaService;
     private final Veo3FastService veo3FastService;
+    private final SoraService soraService;
     private final ExecutorService aiExecutor;
 
     public ProjectService(
@@ -65,6 +69,7 @@ public class ProjectService {
             TtsService ttsService,
             NanoBananaService nanoBananaService,
             Veo3FastService veo3FastService,
+            SoraService soraService,
             ExecutorService aiExecutor
     ) {
         this.defaultUserService = defaultUserService;
@@ -75,6 +80,7 @@ public class ProjectService {
         this.ttsService = ttsService;
         this.nanoBananaService = nanoBananaService;
         this.veo3FastService = veo3FastService;
+        this.soraService = soraService;
         this.aiExecutor = aiExecutor;
     }
 
@@ -150,6 +156,12 @@ public class ProjectService {
         if (request.videoGenerateAudio() != null) {
             beat.setVideoGenerateAudio(request.videoGenerateAudio());
         }
+        if (request.videoModel() != null && !request.videoModel().isBlank()) {
+            beat.setVideoModel(request.videoModel());
+            if ("SORA".equalsIgnoreCase(request.videoModel())) {
+                beat.setVideoGenerateAudio(false);
+            }
+        }
         beatRepository.save(beat);
         return toBeatDetail(beat, List.of());
     }
@@ -175,6 +187,12 @@ public class ProjectService {
         }
         if (request.videoGenerateAudio() != null) {
             beat.setVideoGenerateAudio(request.videoGenerateAudio());
+        }
+        if (request.videoModel() != null && !request.videoModel().isBlank()) {
+            beat.setVideoModel(request.videoModel());
+            if ("SORA".equalsIgnoreCase(request.videoModel())) {
+                beat.setVideoGenerateAudio(false);
+            }
         }
         beatRepository.save(beat);
         List<ProjectDtos.AssetDetail> assets = assetRepository.findByBeatIdIn(List.of(beatId)).stream()
@@ -234,6 +252,7 @@ public class ProjectService {
             beat.setSceneType(SceneType.IMAGE);
             beat.setSelectedForGeneration(true);
             beat.setVideoGenerateAudio(false);
+            beat.setVideoModel("VEO3_FAST");
             saved.add(beat);
         }
         beatRepository.saveAll(saved);
@@ -252,7 +271,8 @@ public class ProjectService {
                         beat.getScenePrompt(),
                         beat.getSceneType(),
                         beat.isSelectedForGeneration(),
-                        beat.isVideoGenerateAudio()
+                        beat.isVideoGenerateAudio(),
+                        beat.getVideoModel()
                 ))
                 .toList();
         String aspectRatio = request != null ? request.aspectRatio() : null;
@@ -354,6 +374,27 @@ public class ProjectService {
         }
         String combinedPrompt = buildVisualPrompt(beat, project);
         if (beat.sceneType() == SceneType.VIDEO) {
+            String videoModel = beat.videoModel() == null || beat.videoModel().isBlank()
+                ? "VEO3_FAST"
+                : beat.videoModel();
+            if ("SORA".equalsIgnoreCase(videoModel)) {
+                SoraRequest request = new SoraRequest();
+                request.setPrompt(combinedPrompt);
+                request.setDuration(8);
+                if (aspectRatio != null && !aspectRatio.isBlank()) {
+                    request.setAspectRatio(aspectRatio);
+                }
+                SoraResult result = soraService.generate(request);
+                if (result.videoUrl() == null || result.videoUrl().isBlank()) {
+                    return null;
+                }
+                GeneratedAsset asset = new GeneratedAsset();
+                asset.setAssetType(AssetType.VIDEO);
+                asset.setUrl(result.videoUrl());
+                asset.setProvider("fal");
+                asset.setMimeType("video/mp4");
+                return asset;
+            }
             Veo3FastRequest request = new Veo3FastRequest();
             request.setPrompt(combinedPrompt);
             request.setGenerateAudio(beat.videoGenerateAudio());
@@ -453,6 +494,7 @@ public class ProjectService {
                 beat.getSceneType().name(),
                 beat.isSelectedForGeneration(),
                 beat.isVideoGenerateAudio(),
+                beat.getVideoModel(),
                 beat.getCreatedAt(),
                 beat.getUpdatedAt(),
                 assets
@@ -654,7 +696,8 @@ public class ProjectService {
             String scenePrompt,
             SceneType sceneType,
             boolean selectedForGeneration,
-            boolean videoGenerateAudio
+            boolean videoGenerateAudio,
+            String videoModel
     ) {
     }
 }

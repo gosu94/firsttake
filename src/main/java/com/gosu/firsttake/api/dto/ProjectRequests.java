@@ -30,7 +30,8 @@ public final class ProjectRequests {
         String scenePrompt,
         String sceneType,
         Boolean selectedForGeneration,
-        Boolean videoGenerateAudio
+        Boolean videoGenerateAudio,
+        String videoModel
     ) {
     }
 
@@ -40,7 +41,8 @@ public final class ProjectRequests {
         String scenePrompt,
         String sceneType,
         Boolean selectedForGeneration,
-        Boolean videoGenerateAudio
+        Boolean videoGenerateAudio,
+        String videoModel
     ) {
     }
 

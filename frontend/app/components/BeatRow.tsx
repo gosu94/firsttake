@@ -21,6 +21,8 @@ export function BeatRow({
     onUpdateBeat,
     setBeatRef,
 }: BeatRowProps) {
+    const videoModel = beat.videoModel ?? 'VEO3_FAST';
+
     return (
         <div
             ref={(node) => setBeatRef(beat.id, node)}
@@ -182,22 +184,44 @@ export function BeatRow({
 
                             <div className="flex items-center gap-4">
                                 {beat.sceneType === 'VIDEO' && (
-                                    <label className="flex items-center text-xs text-gray-300">
-                                        <input
-                                            type="checkbox"
-                                            checked={beat.videoGenerateAudio}
+                                    <div className="flex items-center gap-3">
+                                        <select
+                                            value={videoModel}
                                             onChange={(e) => {
-                                                onUpdateBeatLocal(beat.id, {
-                                                    videoGenerateAudio: e.target.checked,
-                                                });
-                                                void onUpdateBeat(beat.id, {
-                                                    videoGenerateAudio: e.target.checked,
-                                                });
+                                                const nextModel = e.target.value as NonNullable<Beat['videoModel']>;
+                                                const nextUpdates: Partial<Beat> = {
+                                                    videoModel: nextModel,
+                                                };
+                                                if (nextModel === 'SORA') {
+                                                    nextUpdates.videoGenerateAudio = false;
+                                                }
+                                                onUpdateBeatLocal(beat.id, nextUpdates);
+                                                void onUpdateBeat(beat.id, nextUpdates);
                                             }}
-                                            className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
-                                        />
-                                        <span className="ml-2">Sound</span>
-                                    </label>
+                                            className="text-xs bg-white/10 text-gray-100 border border-white/20 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500/60"
+                                        >
+                                            <option value="VEO3_FAST">Veo3 Fast</option>
+                                            <option value="SORA">Sora 2</option>
+                                        </select>
+                                        {videoModel !== 'SORA' && (
+                                            <label className="flex items-center text-xs text-gray-300">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={beat.videoGenerateAudio}
+                                                    onChange={(e) => {
+                                                        onUpdateBeatLocal(beat.id, {
+                                                            videoGenerateAudio: e.target.checked,
+                                                        });
+                                                        void onUpdateBeat(beat.id, {
+                                                            videoGenerateAudio: e.target.checked,
+                                                        });
+                                                    }}
+                                                    className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
+                                                />
+                                                <span className="ml-2">Sound</span>
+                                            </label>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>

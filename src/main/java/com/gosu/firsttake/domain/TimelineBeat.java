@@ -45,6 +45,9 @@ public class TimelineBeat {
     @Column(nullable = false)
     private boolean videoGenerateAudio = false;
 
+    @Column
+    private String videoModel = "VEO3_FAST";
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -129,6 +132,14 @@ public class TimelineBeat {
 
     public void setVideoGenerateAudio(boolean videoGenerateAudio) {
         this.videoGenerateAudio = videoGenerateAudio;
+    }
+
+    public String getVideoModel() {
+        return videoModel;
+    }
+
+    public void setVideoModel(String videoModel) {
+        this.videoModel = videoModel;
     }
 
     public Instant getCreatedAt() {

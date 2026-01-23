@@ -120,6 +120,7 @@ export default function Page() {
                 sceneType: updates.sceneType,
                 selectedForGeneration: updates.selectedForGeneration,
                 videoGenerateAudio: updates.videoGenerateAudio,
+                videoModel: updates.videoModel,
             }),
         });
     };
@@ -199,17 +200,18 @@ export default function Page() {
                 }),
             ),
         );
-        await fetchJson<Beat>(`/api/projects/${activeProjectId}/beats`, {
-            method: 'POST',
-            body: JSON.stringify({
-                orderIndex: targetOrderIndex,
-                scriptSentence: '',
-                scenePrompt: '',
-                sceneType: 'IMAGE',
-                selectedForGeneration: true,
-                videoGenerateAudio: false,
-            }),
-        });
+                await fetchJson<Beat>(`/api/projects/${activeProjectId}/beats`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        orderIndex: targetOrderIndex,
+                        scriptSentence: '',
+                        scenePrompt: '',
+                        sceneType: 'IMAGE',
+                        selectedForGeneration: true,
+                        videoGenerateAudio: false,
+                        videoModel: 'VEO3_FAST',
+                    }),
+                });
         await loadProject(activeProjectId);
     };
 
@@ -398,6 +400,7 @@ export default function Page() {
                         scenePrompt: '',
                         sceneType: 'IMAGE',
                         selectedForGeneration: true,
+                        videoModel: 'VEO3_FAST',
                     }),
                 });
             }

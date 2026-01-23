@@ -42,6 +42,7 @@ public final class ProjectDtos {
         String sceneType,
         boolean selectedForGeneration,
         boolean videoGenerateAudio,
+        String videoModel,
         Instant createdAt,
         Instant updatedAt,
         List<AssetDetail> assets
