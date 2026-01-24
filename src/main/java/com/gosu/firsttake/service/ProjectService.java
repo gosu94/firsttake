@@ -158,9 +158,6 @@ public class ProjectService {
         }
         if (request.videoModel() != null && !request.videoModel().isBlank()) {
             beat.setVideoModel(request.videoModel());
-            if ("SORA".equalsIgnoreCase(request.videoModel())) {
-                beat.setVideoGenerateAudio(false);
-            }
         }
         beatRepository.save(beat);
         return toBeatDetail(beat, List.of());
@@ -190,9 +187,6 @@ public class ProjectService {
         }
         if (request.videoModel() != null && !request.videoModel().isBlank()) {
             beat.setVideoModel(request.videoModel());
-            if ("SORA".equalsIgnoreCase(request.videoModel())) {
-                beat.setVideoGenerateAudio(false);
-            }
         }
         beatRepository.save(beat);
         List<ProjectDtos.AssetDetail> assets = assetRepository.findByBeatIdIn(List.of(beatId)).stream()
@@ -276,9 +270,12 @@ public class ProjectService {
                 ))
                 .toList();
         String aspectRatio = request != null ? request.aspectRatio() : null;
+        boolean generateNarration = request == null || request.generateNarration() == null || request.generateNarration();
 
         for (BeatSnapshot beat : snapshots) {
-            assetRepository.deleteByBeatIdAndAssetType(beat.id(), AssetType.AUDIO);
+            if (generateNarration) {
+                assetRepository.deleteByBeatIdAndAssetType(beat.id(), AssetType.AUDIO);
+            }
             if (beat.sceneType() == SceneType.IMAGE) {
                 assetRepository.deleteByBeatIdAndAssetType(beat.id(), AssetType.IMAGE);
             } else {
@@ -287,7 +284,7 @@ public class ProjectService {
         }
 
         List<CompletableFuture<GeneratedAssetResult>> futures = new ArrayList<>();
-        GeneratedAssetResult audioResult = generateCombinedAudio(project, snapshots);
+        GeneratedAssetResult audioResult = generateNarration ? generateCombinedAudio(project, snapshots) : null;
         for (BeatSnapshot beat : snapshots) {
             if (!beat.selectedForGeneration()) {
                 continue;

@@ -18,6 +18,9 @@ interface ProjectSidebarProps {
     voiceOptions: VoiceOption[];
     onPromptChange: (value: string) => void;
     onPromptBlur: () => void;
+    showGenerateNarration: boolean;
+    generateNarration: boolean;
+    onGenerateNarrationChange: (value: boolean) => void;
     onToneChange: (value: string) => void;
     onToggleVoiceOpen: () => void;
     onSelectVoice: (voiceId: string) => void;
@@ -49,6 +52,9 @@ export function ProjectSidebar({
     voiceOptions,
     onPromptChange,
     onPromptBlur,
+    showGenerateNarration,
+    generateNarration,
+    onGenerateNarrationChange,
     onToneChange,
     onToggleVoiceOpen,
     onSelectVoice,
@@ -77,6 +83,17 @@ export function ProjectSidebar({
                         <h3 className="text-white text-lg font-semibold">Narration</h3>
                     </div>
                     <div data-oid="v4inihj">
+                        {showGenerateNarration && (
+                            <label className="flex items-center gap-2 text-xs text-gray-300 mb-2">
+                                <input
+                                    type="checkbox"
+                                    checked={generateNarration}
+                                    onChange={(e) => onGenerateNarrationChange(e.target.checked)}
+                                    className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
+                                />
+                                <span>Generate narration</span>
+                            </label>
+                        )}
                         <label
                             className="block text-gray-200 text-sm font-medium mb-2"
                             data-oid="6u43poq"

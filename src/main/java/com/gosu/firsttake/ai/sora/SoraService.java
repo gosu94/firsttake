@@ -68,10 +68,6 @@ public class SoraService {
             MODEL_ID,
             QueueSubscribeOptions.builder()
                 .requestId(requestId)
-                .onQueueUpdate(update -> log.info("Sora status update: requestId='{}', status='{}'",
-                    update.getRequestId(),
-                    update.getStatus()
-                ))
                 .build()
         );
 

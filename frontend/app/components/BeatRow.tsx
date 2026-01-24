@@ -192,9 +192,6 @@ export function BeatRow({
                                                 const nextUpdates: Partial<Beat> = {
                                                     videoModel: nextModel,
                                                 };
-                                                if (nextModel === 'SORA') {
-                                                    nextUpdates.videoGenerateAudio = false;
-                                                }
                                                 onUpdateBeatLocal(beat.id, nextUpdates);
                                                 void onUpdateBeat(beat.id, nextUpdates);
                                             }}
@@ -203,24 +200,22 @@ export function BeatRow({
                                             <option value="VEO3_FAST">Veo3 Fast</option>
                                             <option value="SORA">Sora 2</option>
                                         </select>
-                                        {videoModel !== 'SORA' && (
-                                            <label className="flex items-center text-xs text-gray-300">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={beat.videoGenerateAudio}
-                                                    onChange={(e) => {
-                                                        onUpdateBeatLocal(beat.id, {
-                                                            videoGenerateAudio: e.target.checked,
-                                                        });
-                                                        void onUpdateBeat(beat.id, {
-                                                            videoGenerateAudio: e.target.checked,
-                                                        });
-                                                    }}
-                                                    className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
-                                                />
-                                                <span className="ml-2">Sound</span>
-                                            </label>
-                                        )}
+                                        <label className="flex items-center text-xs text-gray-300">
+                                            <input
+                                                type="checkbox"
+                                                checked={beat.videoGenerateAudio}
+                                                onChange={(e) => {
+                                                    onUpdateBeatLocal(beat.id, {
+                                                        videoGenerateAudio: e.target.checked,
+                                                    });
+                                                    void onUpdateBeat(beat.id, {
+                                                        videoGenerateAudio: e.target.checked,
+                                                    });
+                                                }}
+                                                className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
+                                            />
+                                            <span className="ml-2">Sound</span>
+                                        </label>
                                     </div>
                                 )}
                             </div>

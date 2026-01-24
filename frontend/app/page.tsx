@@ -34,6 +34,7 @@ export default function Page() {
     const [format, setFormat] = useState('16:9');
     const [duration, setDuration] = useState('30s');
     const [ctaStyle, setCtaStyle] = useState('soft');
+    const [generateNarration, setGenerateNarration] = useState(true);
     const [projectId, setProjectId] = useState<number | null>(null);
     const [beats, setBeats] = useState<Beat[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -168,7 +169,7 @@ export default function Page() {
         try {
             const result = await fetchJson<Beat[]>(`/api/projects/${projectId}/generate-assets`, {
                 method: 'POST',
-                body: JSON.stringify({ aspectRatio: format }),
+                body: JSON.stringify({ aspectRatio: format, generateNarration }),
             });
             setBeats(result);
         } catch (err) {
@@ -431,6 +432,9 @@ export default function Page() {
 
     const shouldAnimate = animationKey > 0;
     const hasAssets = beats.some((beat) => beat.assets && beat.assets.length > 0);
+    const showGenerateNarration = beats.some(
+        (beat) => beat.scriptSentence && beat.scriptSentence.trim().length > 0,
+    );
 
     return (
         <div className="min-h-screen blueprint-grid relative overflow-hidden" data-oid="sn:jvm8">
@@ -522,6 +526,9 @@ export default function Page() {
                     voiceOptions={VOICE_OPTIONS}
                     onPromptChange={setPrompt}
                     onPromptBlur={() => updateProject({ generalPrompt: prompt })}
+                    showGenerateNarration={showGenerateNarration}
+                    generateNarration={generateNarration}
+                    onGenerateNarrationChange={setGenerateNarration}
                     onToneChange={(value) => {
                         setTone(value);
                         void updateProject({ tone: value });

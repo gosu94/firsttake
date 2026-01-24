@@ -58,7 +58,8 @@ public final class ProjectRequests {
     }
 
     public record GenerateAssets(
-        String aspectRatio
+        String aspectRatio,
+        Boolean generateNarration
     ) {
     }
 }
