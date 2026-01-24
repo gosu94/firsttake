@@ -9,6 +9,9 @@ interface TimelinePanelProps {
     isCreatingBlank: boolean;
     shouldAnimate: boolean;
     animationKey: number;
+    showGenerateNarration: boolean;
+    generateNarration: boolean;
+    onGenerateNarrationChange: (value: boolean) => void;
     footer?: ReactNode;
     onCreateBlank: () => void;
     onInsertBeatAt: (orderIndex: number) => void;
@@ -25,6 +28,9 @@ export function TimelinePanel({
     isCreatingBlank,
     shouldAnimate,
     animationKey,
+    showGenerateNarration,
+    generateNarration,
+    onGenerateNarrationChange,
     footer,
     onCreateBlank,
     onInsertBeatAt,
@@ -70,6 +76,19 @@ export function TimelinePanel({
                         ></div>
 
                         <div className="space-y-6 pb-10" data-oid="z:ev92q">
+                            {showGenerateNarration && (
+                                <div className="flex justify-start">
+                                    <label className="flex items-center gap-2 text-xs text-gray-300 px-4 py-2 rounded-full border border-white/15 bg-white/5 backdrop-blur-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={generateNarration}
+                                            onChange={(e) => onGenerateNarrationChange(e.target.checked)}
+                                            className="w-4 h-4 text-purple-600 bg-white/10 border-white/30 rounded focus:ring-purple-500 focus:ring-2 cursor-pointer transition-all duration-200 checked:bg-gradient-to-br checked:from-purple-600 checked:to-indigo-600"
+                                        />
+                                        <span>Generate narration</span>
+                                    </label>
+                                </div>
+                            )}
                             {beats.map((beat, index) => (
                                 <BeatRow
                                     key={beat.id}

@@ -526,9 +526,6 @@ export default function Page() {
                     voiceOptions={VOICE_OPTIONS}
                     onPromptChange={setPrompt}
                     onPromptBlur={() => updateProject({ generalPrompt: prompt })}
-                    showGenerateNarration={showGenerateNarration}
-                    generateNarration={generateNarration}
-                    onGenerateNarrationChange={setGenerateNarration}
                     onToneChange={(value) => {
                         setTone(value);
                         void updateProject({ tone: value });
@@ -555,6 +552,9 @@ export default function Page() {
                     isCreatingBlank={isCreatingBlank}
                     shouldAnimate={shouldAnimate}
                     animationKey={animationKey}
+                    showGenerateNarration={showGenerateNarration}
+                    generateNarration={generateNarration}
+                    onGenerateNarrationChange={setGenerateNarration}
                     onCreateBlank={createBlankBeats}
                     onInsertBeatAt={insertBeatAt}
                     onDeleteBeatAt={deleteBeatAt}

@@ -371,7 +371,6 @@
         linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     background-size: 50px 50px;
     background-position: 0 0, 0 0;
-    animation: gridMove 20s linear infinite;
 }
 
 @keyframes gridMove {
