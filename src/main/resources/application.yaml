@@ -4,16 +4,14 @@ spring:
   thymeleaf:
     enabled: false
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/firsttake}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:firsttake}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     open-in-view: false
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
+    defer-datasource-initialization: true
 
   security:
     oauth2:

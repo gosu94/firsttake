@@ -1,3 +1,6 @@
+--liquibase formatted sql
+
+--changeset firsttake:1
 CREATE TABLE app_user (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(320) UNIQUE,
@@ -10,6 +13,7 @@ CREATE TABLE app_user (
     last_login_at TIMESTAMP
 );
 
+--changeset firsttake:2
 CREATE TABLE user_auth_provider (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
@@ -20,6 +24,7 @@ CREATE TABLE user_auth_provider (
     UNIQUE (provider, provider_subject)
 );
 
+--changeset firsttake:3
 CREATE TABLE email_verification_token (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
@@ -29,6 +34,7 @@ CREATE TABLE email_verification_token (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+--changeset firsttake:4
 CREATE TABLE password_reset_token (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
@@ -38,6 +44,7 @@ CREATE TABLE password_reset_token (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+--changeset firsttake:5
 CREATE TABLE project (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
@@ -51,6 +58,7 @@ CREATE TABLE project (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+--changeset firsttake:6
 CREATE TABLE timeline_beat (
     id BIGSERIAL PRIMARY KEY,
     project_id BIGINT NOT NULL REFERENCES project(id) ON DELETE CASCADE,
@@ -65,6 +73,7 @@ CREATE TABLE timeline_beat (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+--changeset firsttake:7
 CREATE TABLE generated_asset (
     id BIGSERIAL PRIMARY KEY,
     beat_id BIGINT NOT NULL REFERENCES timeline_beat(id) ON DELETE CASCADE,
@@ -79,9 +88,13 @@ CREATE TABLE generated_asset (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+--changeset firsttake:8
 CREATE INDEX idx_generated_asset_project_id ON generated_asset(project_id);
+
+--changeset firsttake:9
 CREATE INDEX idx_generated_asset_user_id ON generated_asset(created_by_user_id);
 
+--changeset firsttake:10
 CREATE TABLE coin_transaction (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
@@ -93,6 +106,7 @@ CREATE TABLE coin_transaction (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+--changeset firsttake:11
 CREATE TABLE subscription (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
@@ -106,6 +120,7 @@ CREATE TABLE subscription (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+--changeset firsttake:12
 CREATE TABLE user_session (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
