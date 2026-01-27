@@ -41,7 +41,6 @@ public class SoraService {
         if (request.getModel() != null && !request.getModel().isBlank()) {
             input.put("model", request.getModel());
         }
-
         log.info("Submitting Sora request: prompt='{}', aspectRatio='{}', duration='{}', resolution='{}', deleteVideo='{}', model='{}'",
             request.getPrompt(),
             request.getAspectRatio(),

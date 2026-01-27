@@ -223,6 +223,19 @@ export default function Page() {
         }
     };
 
+    const scheduleDefaultPreviewStep = (currentIndex: number) => {
+        const stepMs = previewStepMsRef.current ?? 2500;
+        previewStepMsRef.current = stepMs;
+        const beat = beats[currentIndex];
+        const asset = beat?.assets?.find(
+            (item) => item.assetType === 'IMAGE' || item.assetType === 'VIDEO',
+        );
+        previewIndexRef.current = currentIndex + 1;
+        if (asset?.assetType !== 'VIDEO') {
+            schedulePreviewStep(stepMs);
+        }
+    };
+
     const advancePreview = () => {
         setPreviewIndex(previewIndexRef.current);
         previewIndexRef.current += 1;
@@ -262,38 +275,37 @@ export default function Page() {
             const audio = audioRef.current;
             if (audio) {
                 audio.pause();
-                setIsPreviewPlaying(false);
-                setIsPreviewPaused(true);
-                clearPreviewTimer();
             }
+            setIsPreviewPlaying(false);
+            setIsPreviewPaused(true);
+            clearPreviewTimer();
             return;
         }
         if (isPreviewPaused) {
             const audio = audioRef.current;
-            if (!audio) {
+            if (audio) {
+                const stepMs = previewStepMsRef.current;
+                if (stepMs) {
+                    previewIndexRef.current = Math.min(
+                        Math.floor((audio.currentTime * 1000) / stepMs),
+                        Math.max(beats.length - 1, 0),
+                    );
+                    setPreviewIndex(previewIndexRef.current);
+                    previewIndexRef.current += 1;
+                }
+                setIsPreviewPlaying(true);
                 setIsPreviewPaused(false);
-                return;
+                void audio.play();
+            } else {
+                setIsPreviewPlaying(true);
+                setIsPreviewPaused(false);
+                scheduleDefaultPreviewStep(previewIndex);
             }
-            const stepMs = previewStepMsRef.current;
-            if (stepMs) {
-                previewIndexRef.current = Math.min(
-                    Math.floor((audio.currentTime * 1000) / stepMs),
-                    Math.max(beats.length - 1, 0),
-                );
-                setPreviewIndex(previewIndexRef.current);
-                previewIndexRef.current += 1;
-            }
-            setIsPreviewPlaying(true);
-            setIsPreviewPaused(false);
-            void audio.play();
             return;
         }
         const narrationAsset = beats
             .flatMap((beat) => beat.assets || [])
             .find((asset) => asset.assetType === 'AUDIO');
-        if (!narrationAsset) {
-            return;
-        }
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
@@ -303,6 +315,15 @@ export default function Page() {
             window.clearTimeout(previewScrollTimeoutRef.current);
         }
         previewScrollTimeoutRef.current = window.setTimeout(() => {
+            if (!narrationAsset) {
+                previewIndexRef.current = 0;
+                setPreviewIndex(0);
+                previewStepMsRef.current = 2500;
+                setIsPreviewPlaying(true);
+                setIsPreviewPaused(false);
+                scheduleDefaultPreviewStep(0);
+                return;
+            }
             const audio = new Audio(narrationAsset.url);
             audioRef.current = audio;
             previewIndexRef.current = 0;
