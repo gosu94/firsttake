@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ExportService {
     private final DefaultUserService defaultUserService;
+    private final CurrentUserService currentUserService;
     private final ProjectRepository projectRepository;
     private final TimelineBeatRepository beatRepository;
     private final GeneratedAssetRepository assetRepository;
@@ -41,11 +42,13 @@ public class ExportService {
 
     public ExportService(
         DefaultUserService defaultUserService,
+        CurrentUserService currentUserService,
         ProjectRepository projectRepository,
         TimelineBeatRepository beatRepository,
         GeneratedAssetRepository assetRepository
     ) {
         this.defaultUserService = defaultUserService;
+        this.currentUserService = currentUserService;
         this.projectRepository = projectRepository;
         this.beatRepository = beatRepository;
         this.assetRepository = assetRepository;
@@ -178,8 +181,12 @@ public class ExportService {
     }
 
     private Project getProjectForDefaultUser(Long projectId) {
-        AppUser user = defaultUserService.getOrCreateDefaultUser();
+        AppUser user = resolveCurrentUser();
         return projectRepository.findByIdAndUserId(projectId, user.getId())
             .orElseThrow(() -> new IllegalArgumentException("Project not found."));
+    }
+
+    private AppUser resolveCurrentUser() {
+        return currentUserService.getCurrentUser().orElseGet(defaultUserService::getOrCreateDefaultUser);
     }
 }

@@ -25,6 +25,14 @@ public class GeneratedAsset {
     @JoinColumn(name = "beat_id", nullable = false)
     private TimelineBeat beat;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_user_id")
+    private AppUser createdByUser;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AssetType assetType;
@@ -37,6 +45,9 @@ public class GeneratedAsset {
     private String mimeType;
 
     private Double durationSeconds;
+
+    @Column(columnDefinition = "TEXT")
+    private String originalPrompt;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -62,6 +73,22 @@ public class GeneratedAsset {
 
     public void setBeat(TimelineBeat beat) {
         this.beat = beat;
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    public void setProject(Project project) {
+        this.project = project;
+    }
+
+    public AppUser getCreatedByUser() {
+        return createdByUser;
+    }
+
+    public void setCreatedByUser(AppUser createdByUser) {
+        this.createdByUser = createdByUser;
     }
 
     public AssetType getAssetType() {
@@ -102,6 +129,14 @@ public class GeneratedAsset {
 
     public void setDurationSeconds(Double durationSeconds) {
         this.durationSeconds = durationSeconds;
+    }
+
+    public String getOriginalPrompt() {
+        return originalPrompt;
+    }
+
+    public void setOriginalPrompt(String originalPrompt) {
+        this.originalPrompt = originalPrompt;
     }
 
     public Instant getCreatedAt() {

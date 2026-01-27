@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 @Service
 public class ProjectService {
     private final DefaultUserService defaultUserService;
+    private final CurrentUserService currentUserService;
     private final ProjectRepository projectRepository;
     private final TimelineBeatRepository beatRepository;
     private final GeneratedAssetRepository assetRepository;
@@ -62,6 +63,7 @@ public class ProjectService {
 
     public ProjectService(
             DefaultUserService defaultUserService,
+            CurrentUserService currentUserService,
             ProjectRepository projectRepository,
             TimelineBeatRepository beatRepository,
             GeneratedAssetRepository assetRepository,
@@ -73,6 +75,7 @@ public class ProjectService {
             ExecutorService aiExecutor
     ) {
         this.defaultUserService = defaultUserService;
+        this.currentUserService = currentUserService;
         this.projectRepository = projectRepository;
         this.beatRepository = beatRepository;
         this.assetRepository = assetRepository;
@@ -86,7 +89,7 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<ProjectDtos.ProjectSummary> listProjects() {
-        AppUser user = defaultUserService.getOrCreateDefaultUser();
+        AppUser user = resolveCurrentUser();
         return projectRepository.findByUserIdOrderByCreatedAtAsc(user.getId()).stream()
                 .map(this::toSummary)
                 .toList();
@@ -94,7 +97,7 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public ProjectDtos.ProjectDetail getProjectDetail(Long projectId) {
-        Project project = getProjectForDefaultUser(projectId);
+        Project project = getProjectForCurrentUser(projectId);
         List<TimelineBeat> beats = beatRepository.findByProjectIdOrderByOrderIndexAsc(projectId);
         List<ProjectDtos.BeatDetail> beatDetails = mapBeatsWithAssets(beats);
         return toDetail(project, beatDetails);
@@ -102,7 +105,7 @@ public class ProjectService {
 
     @Transactional
     public ProjectDtos.ProjectSummary createProject(ProjectRequests.ProjectCreate request) {
-        AppUser user = defaultUserService.getOrCreateDefaultUser();
+        AppUser user = resolveCurrentUser();
         Project project = new Project();
         project.setUser(user);
         project.setName(request.name() == null || request.name().isBlank() ? "Untitled Project" : request.name());
@@ -117,7 +120,7 @@ public class ProjectService {
 
     @Transactional
     public ProjectDtos.ProjectSummary updateProject(Long projectId, ProjectRequests.ProjectUpdate request) {
-        Project project = getProjectForDefaultUser(projectId);
+        Project project = getProjectForCurrentUser(projectId);
         if (request.name() != null) {
             project.setName(request.name());
         }
@@ -142,7 +145,7 @@ public class ProjectService {
 
     @Transactional
     public ProjectDtos.BeatDetail createBeat(Long projectId, ProjectRequests.BeatCreate request) {
-        Project project = getProjectForDefaultUser(projectId);
+        Project project = getProjectForCurrentUser(projectId);
         TimelineBeat beat = new TimelineBeat();
         beat.setProject(project);
         int orderIndex = request.orderIndex() != null ? request.orderIndex() : beatRepository.findMaxOrderIndex(projectId) + 1;
@@ -204,7 +207,7 @@ public class ProjectService {
 
     @Transactional
     public List<ProjectDtos.BeatDetail> generateScript(Long projectId, ProjectRequests.GenerateScript request) {
-        Project project = getProjectForDefaultUser(projectId);
+        Project project = getProjectForCurrentUser(projectId);
         if (request.generalPrompt() != null) {
             project.setGeneralPrompt(request.generalPrompt());
         }
@@ -255,7 +258,8 @@ public class ProjectService {
 
     @Transactional
     public List<ProjectDtos.BeatDetail> generateAssets(Long projectId, ProjectRequests.GenerateAssets request) {
-        Project project = getProjectForDefaultUser(projectId);
+        Project project = getProjectForCurrentUser(projectId);
+        AppUser user = resolveCurrentUser();
         List<TimelineBeat> beats = beatRepository.findByProjectIdOrderByOrderIndexAsc(projectId);
         List<BeatSnapshot> snapshots = beats.stream()
                 .map(beat -> new BeatSnapshot(
@@ -307,12 +311,14 @@ public class ProjectService {
             results.add(audioResult);
         }
         List<GeneratedAsset> newAssets = results.stream()
-                .map(result -> {
-                    GeneratedAsset asset = result.asset();
-                    asset.setBeat(beatMap.get(result.beatId()));
-                    return asset;
-                })
-                .toList();
+            .map(result -> {
+                GeneratedAsset asset = result.asset();
+                asset.setBeat(beatMap.get(result.beatId()));
+                asset.setProject(project);
+                asset.setCreatedByUser(user);
+                return asset;
+            })
+            .toList();
         if (!newAssets.isEmpty()) {
             assetRepository.saveAll(newAssets);
         }
@@ -339,6 +345,7 @@ public class ProjectService {
         asset.setUrl(dataUrl);
         asset.setProvider("openai");
         asset.setMimeType(mimeType);
+        asset.setOriginalPrompt(input);
         return asset;
     }
 
@@ -390,6 +397,7 @@ public class ProjectService {
                 asset.setUrl(result.videoUrl());
                 asset.setProvider("fal");
                 asset.setMimeType("video/mp4");
+                asset.setOriginalPrompt(combinedPrompt);
                 return asset;
             }
             Veo3FastRequest request = new Veo3FastRequest();
@@ -407,6 +415,7 @@ public class ProjectService {
             asset.setUrl(result.videoUrl());
             asset.setProvider("fal");
             asset.setMimeType("video/mp4");
+            asset.setOriginalPrompt(combinedPrompt);
             return asset;
         }
 
@@ -425,13 +434,18 @@ public class ProjectService {
         asset.setUrl(url);
         asset.setProvider("fal");
         asset.setMimeType("image/png");
+        asset.setOriginalPrompt(combinedPrompt);
         return asset;
     }
 
-    private Project getProjectForDefaultUser(Long projectId) {
-        AppUser user = defaultUserService.getOrCreateDefaultUser();
+    private Project getProjectForCurrentUser(Long projectId) {
+        AppUser user = resolveCurrentUser();
         return projectRepository.findByIdAndUserId(projectId, user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Project not found."));
+    }
+
+    private AppUser resolveCurrentUser() {
+        return currentUserService.getCurrentUser().orElseGet(defaultUserService::getOrCreateDefaultUser);
     }
 
     private ProjectDtos.ProjectSummary toSummary(Project project) {

@@ -28,6 +28,8 @@ public class DefaultUserService {
         }
         AppUser user = new AppUser();
         user.setEmail(DEFAULT_EMAIL);
+        user.setEmailVerified(true);
+        user.setDisplayName("Dev User");
         return appUserRepository.save(user);
     }
 
