@@ -3,6 +3,7 @@ import type { Beat } from '../types';
 interface BeatRowProps {
     beat: Beat;
     index: number;
+    isActive: boolean;
     shouldAnimate: boolean;
     onInsertBeatAt: (orderIndex: number) => void;
     onDeleteBeatAt: (beatId: number) => void;
@@ -14,6 +15,7 @@ interface BeatRowProps {
 export function BeatRow({
     beat,
     index,
+    isActive,
     shouldAnimate,
     onInsertBeatAt,
     onDeleteBeatAt,
@@ -44,7 +46,11 @@ export function BeatRow({
                 className="absolute left-1/2 top-[60px] -translate-x-1/2 z-10 group"
                 data-oid="2ru5:cv"
             >
-                <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full border-4 border-black/50 shadow-lg shadow-purple-500/50 animate-pulse-glow"></div>
+                <div
+                    className={`w-5 h-5 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full border-4 border-black/50 shadow-lg shadow-purple-500/50 beat-dot ${
+                        isActive ? 'beat-dot--active' : ''
+                    }`}
+                ></div>
                 <button
                     type="button"
                     onClick={() => onDeleteBeatAt(beat.id)}
@@ -77,7 +83,13 @@ export function BeatRow({
                         {beat.assets
                             .filter((asset) => asset.assetType === 'AUDIO')
                             .map((asset) => (
-                                <audio key={asset.id} controls src={asset.url} className="w-full" />
+                                <audio
+                                    key={asset.id}
+                                    controls
+                                    preload="metadata"
+                                    src={asset.url}
+                                    className="w-full"
+                                />
                             ))}
                     </div>
                 )}
@@ -234,6 +246,8 @@ export function BeatRow({
                                             key={asset.id}
                                             src={asset.url}
                                             alt="Generated scene"
+                                            loading="lazy"
+                                            decoding="async"
                                             className="w-full rounded media-hover"
                                         />
                                     );
@@ -243,6 +257,7 @@ export function BeatRow({
                                         <video
                                             key={asset.id}
                                             controls
+                                            preload="metadata"
                                             src={asset.url}
                                             className="w-full rounded media-hover"
                                         />

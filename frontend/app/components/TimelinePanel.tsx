@@ -12,6 +12,7 @@ interface TimelinePanelProps {
     showGenerateNarration: boolean;
     generateNarration: boolean;
     onGenerateNarrationChange: (value: boolean) => void;
+    activeBeatId: number | null;
     footer?: ReactNode;
     onCreateBlank: () => void;
     onInsertBeatAt: (orderIndex: number) => void;
@@ -31,6 +32,7 @@ export function TimelinePanel({
     showGenerateNarration,
     generateNarration,
     onGenerateNarrationChange,
+    activeBeatId,
     footer,
     onCreateBlank,
     onInsertBeatAt,
@@ -94,6 +96,7 @@ export function TimelinePanel({
                                     key={beat.id}
                                     beat={beat}
                                     index={index}
+                                    isActive={activeBeatId === beat.id}
                                     shouldAnimate={shouldAnimate}
                                     onInsertBeatAt={onInsertBeatAt}
                                     onDeleteBeatAt={onDeleteBeatAt}

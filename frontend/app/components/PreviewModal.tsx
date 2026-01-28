@@ -68,6 +68,7 @@ export function PreviewModal({
                                     autoPlay
                                     muted
                                     playsInline
+                                    preload="metadata"
                                     onEnded={() => {
                                         if (isPreviewPlaying) {
                                             onAdvancePreview();
@@ -81,6 +82,7 @@ export function PreviewModal({
                                 key={`preview-image-${asset.id}-${previewIndex}`}
                                 src={asset.url}
                                 alt="Generated scene"
+                                decoding="async"
                                 className={`max-h-full max-w-full rounded-lg ${
                                     isPreviewPlaying ? 'preview-zoom' : ''
                                 }`}

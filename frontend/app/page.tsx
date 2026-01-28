@@ -270,6 +270,25 @@ export default function Page() {
         setPreviewIndex(0);
     };
 
+    useEffect(() => {
+        if (!isPreviewOpen && (isPreviewPlaying || isPreviewPaused)) {
+            stopPreview();
+        }
+    }, [isPreviewOpen, isPreviewPaused, isPreviewPlaying]);
+
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                stopPreview();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            stopPreview();
+        };
+    }, []);
+
     const playPreview = () => {
         if (isPreviewPlaying) {
             const audio = audioRef.current;
@@ -456,6 +475,8 @@ export default function Page() {
     const showGenerateNarration = beats.some(
         (beat) => beat.scriptSentence && beat.scriptSentence.trim().length > 0,
     );
+    const activeBeatId =
+        isPreviewPlaying || isPreviewPaused ? beats[previewIndex]?.id ?? null : null;
 
     return (
         <div className="min-h-screen blueprint-grid relative overflow-hidden" data-oid="sn:jvm8">
@@ -575,6 +596,7 @@ export default function Page() {
                     animationKey={animationKey}
                     showGenerateNarration={showGenerateNarration}
                     generateNarration={generateNarration}
+                    activeBeatId={activeBeatId}
                     onGenerateNarrationChange={setGenerateNarration}
                     onCreateBlank={createBlankBeats}
                     onInsertBeatAt={insertBeatAt}
