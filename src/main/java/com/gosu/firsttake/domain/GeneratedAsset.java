@@ -22,7 +22,7 @@ public class GeneratedAsset {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "beat_id", nullable = false)
+    @JoinColumn(name = "beat_id")
     private TimelineBeat beat;
 
     @ManyToOne(fetch = FetchType.LAZY)

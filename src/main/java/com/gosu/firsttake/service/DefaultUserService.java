@@ -2,6 +2,7 @@ package com.gosu.firsttake.service;
 
 import com.gosu.firsttake.domain.AppUser;
 import com.gosu.firsttake.domain.Project;
+import com.gosu.firsttake.domain.ProjectStatus;
 import com.gosu.firsttake.repository.AppUserRepository;
 import com.gosu.firsttake.repository.ProjectRepository;
 import java.util.Optional;
@@ -36,7 +37,10 @@ public class DefaultUserService {
     @Transactional
     public Project ensureDefaultProject(AppUser user) {
         if (projectRepository.existsByUserId(user.getId())) {
-            return projectRepository.findByUserIdOrderByCreatedAtAsc(user.getId()).getFirst();
+            return projectRepository.findByUserIdAndStatusOrderByUpdatedAtDesc(user.getId(), ProjectStatus.SAVED)
+                .stream()
+                .findFirst()
+                .orElseGet(() -> projectRepository.findByUserIdOrderByCreatedAtAsc(user.getId()).getFirst());
         }
         Project project = new Project();
         project.setUser(user);
@@ -44,6 +48,7 @@ public class DefaultUserService {
         project.setGeneralPrompt("");
         project.setTone("professional");
         project.setNarratorVoice("alloy");
+        project.setStatus(ProjectStatus.SAVED);
         return projectRepository.save(project);
     }
 }

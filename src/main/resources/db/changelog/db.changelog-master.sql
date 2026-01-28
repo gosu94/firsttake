@@ -130,3 +130,17 @@ CREATE TABLE user_session (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (refresh_token)
 );
+
+--changeset firsttake:13
+ALTER TABLE project ADD COLUMN status VARCHAR(32);
+UPDATE project SET status = 'SAVED' WHERE status IS NULL;
+ALTER TABLE project ALTER COLUMN status SET NOT NULL;
+ALTER TABLE project ALTER COLUMN status SET DEFAULT 'DRAFT';
+ALTER TABLE project ADD COLUMN last_opened_at TIMESTAMP;
+
+--changeset firsttake:14
+ALTER TABLE generated_asset DROP CONSTRAINT generated_asset_beat_id_fkey;
+ALTER TABLE generated_asset ALTER COLUMN beat_id DROP NOT NULL;
+ALTER TABLE generated_asset
+    ADD CONSTRAINT generated_asset_beat_id_fkey
+    FOREIGN KEY (beat_id) REFERENCES timeline_beat(id) ON DELETE SET NULL;

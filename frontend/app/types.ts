@@ -28,6 +28,10 @@ export type ProjectSummary = {
     narratorVoice?: string;
     narratorVoicePrompt?: string;
     visualStylePrompt?: string;
+    status?: 'DRAFT' | 'SAVED' | 'ARCHIVED';
+    createdAt?: string;
+    updatedAt?: string;
+    lastOpenedAt?: string | null;
 };
 
 export type ProjectDetail = {
@@ -38,6 +42,10 @@ export type ProjectDetail = {
     narratorVoice?: string;
     narratorVoicePrompt?: string;
     visualStylePrompt?: string;
+    status?: 'DRAFT' | 'SAVED' | 'ARCHIVED';
+    createdAt?: string;
+    updatedAt?: string;
+    lastOpenedAt?: string | null;
     beats: Beat[];
 };
 

@@ -1,18 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
-type GalleryAsset = {
+type GalleryProject = {
     id: number;
-    projectId: number | null;
-    beatId: number | null;
-    assetType: 'AUDIO' | 'IMAGE' | 'VIDEO';
-    url: string;
-    provider?: string;
-    mimeType?: string;
-    durationSeconds?: number;
-    originalPrompt?: string | null;
+    name: string;
+    status: 'DRAFT' | 'SAVED' | 'ARCHIVED';
     createdAt?: string;
+    updatedAt?: string;
+    assetCount: number;
+    previewUrl?: string | null;
+    previewAssetType?: 'IMAGE' | 'VIDEO' | null;
 };
 
 const fetchJson = async <T,>(url: string, options?: RequestInit): Promise<T> => {
@@ -31,103 +30,74 @@ const fetchJson = async <T,>(url: string, options?: RequestInit): Promise<T> => 
 };
 
 export default function GalleryPage() {
-    const [assets, setAssets] = useState<GalleryAsset[]>([]);
-    const [filter, setFilter] = useState<'ALL' | 'AUDIO' | 'IMAGE' | 'VIDEO'>('ALL');
+    const [projects, setProjects] = useState<GalleryProject[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
             setError(null);
             try {
-                const query = filter === 'ALL' ? '' : `?type=${filter}`;
-                const response = await fetchJson<GalleryAsset[]>(`/api/me/gallery${query}`);
-                setAssets(response);
+                const response = await fetchJson<GalleryProject[]>('/api/gallery/projects');
+                setProjects(response);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to load gallery.');
             }
         };
         void load();
-    }, [filter]);
-
-    const grouped = useMemo(() => {
-        const map = new Map<string, GalleryAsset[]>();
-        assets.forEach((asset) => {
-            const key = asset.projectId ? `Project ${asset.projectId}` : 'Ungrouped';
-            const existing = map.get(key) ?? [];
-            existing.push(asset);
-            map.set(key, existing);
-        });
-        return Array.from(map.entries());
-    }, [assets]);
-
-    const renderAsset = (asset: GalleryAsset) => {
-        if (asset.assetType === 'AUDIO') {
-            return <audio controls className="w-full" src={asset.url} />;
-        }
-        if (asset.assetType === 'VIDEO') {
-            return <video controls className="w-full rounded-xl" src={asset.url} />;
-        }
-        return <img src={asset.url} alt="Generated" className="w-full rounded-xl object-cover" />;
-    };
+    }, []);
 
     return (
         <div className="mx-auto flex max-w-6xl flex-col gap-8 py-12">
             <div className="glass-panel rounded-3xl p-8">
                 <div className="flex flex-col gap-4">
                     <h1 className="text-3xl font-semibold text-white text-glow">Your gallery</h1>
-                    <p className="text-sm text-gray-400">All generated assets, ready to preview.</p>
-                </div>
-                <div className="mt-6 flex flex-wrap gap-2">
-                    {(['ALL', 'AUDIO', 'IMAGE', 'VIDEO'] as const).map((type) => (
-                        <button
-                            key={type}
-                            type="button"
-                            className={
-                                filter === type
-                                    ? 'rounded-full bg-white/10 px-4 py-2 text-xs text-white'
-                                    : 'rounded-full border border-white/10 px-4 py-2 text-xs text-gray-300 hover:bg-white/10'
-                            }
-                            onClick={() => setFilter(type)}
-                        >
-                            {type}
-                        </button>
-                    ))}
+                    <p className="text-sm text-gray-400">Browse assets by project.</p>
                 </div>
                 {error && <p className="mt-4 text-sm text-rose-300">{error}</p>}
-                <div className="mt-8 flex flex-col gap-8">
-                    {grouped.map(([group, items]) => (
-                        <div key={group} className="space-y-4">
-                            <h2 className="text-lg font-semibold text-white">{group}</h2>
-                            <div className="grid gap-6 md:grid-cols-2">
-                                {items.map((asset) => (
-                                    <div key={asset.id} className="glass-card p-4">
-                                        <div className="flex items-center justify-between text-xs text-gray-400">
-                                            <span>{asset.assetType}</span>
-                                            {asset.createdAt && <span>{new Date(asset.createdAt).toLocaleString()}</span>}
-                                        </div>
-                                        <div className="mt-4">{renderAsset(asset)}</div>
-                                        {asset.originalPrompt && (
-                                            <p className="mt-3 max-h-16 overflow-hidden text-xs text-gray-500">
-                                                {asset.originalPrompt}
-                                            </p>
-                                        )}
-                                        <div className="mt-4 flex gap-2">
-                                            <button
-                                                type="button"
-                                                className="rounded-xl border border-white/10 px-3 py-2 text-xs text-gray-200 hover:bg-white/10"
-                                                onClick={() => window.open(asset.url, '_blank')}
-                                            >
-                                                Open Preview
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                <div className="mt-8 grid gap-6 md:grid-cols-2">
+                    {projects.map((project) => (
+                        <Link
+                            key={project.id}
+                            href={`/gallery/${project.id}`}
+                            className="glass-card p-5 transition-all hover:scale-[1.01]"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-400">{project.status}</p>
+                                    <h2 className="text-lg font-semibold text-white">{project.name}</h2>
+                                </div>
+                                <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-gray-300">
+                                    {project.assetCount} assets
+                                </span>
                             </div>
-                        </div>
+                            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                                {project.previewUrl ? (
+                                    project.previewAssetType === 'VIDEO' ? (
+                                        <video
+                                            className="h-40 w-full rounded-xl object-cover"
+                                            src={project.previewUrl}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={project.previewUrl}
+                                            alt={`${project.name} preview`}
+                                            className="h-40 w-full rounded-xl object-cover"
+                                        />
+                                    )
+                                ) : (
+                                    <div className="flex h-40 items-center justify-center text-xs text-gray-400">
+                                        No preview yet
+                                    </div>
+                                )}
+                            </div>
+                            <div className="mt-4 text-xs text-gray-400">
+                                Updated {project.updatedAt ? new Date(project.updatedAt).toLocaleString() : '—'}
+                            </div>
+                        </Link>
                     ))}
-                    {grouped.length === 0 && (
+                    {projects.length === 0 && (
                         <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-gray-400">
-                            No assets yet. Generate scenes from the dashboard to populate your gallery.
+                            No projects yet. Generate scenes from the dashboard to populate your gallery.
                         </div>
                     )}
                 </div>

@@ -40,9 +40,20 @@ public class ProjectController {
         return projectService.createProject(request);
     }
 
+    @PostMapping("/projects/draft")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProjectDtos.ProjectSummary createDraftProject() {
+        return projectService.createDraftProject();
+    }
+
     @GetMapping("/projects/{projectId}")
     public ProjectDtos.ProjectDetail getProject(@PathVariable Long projectId) {
         return projectService.getProjectDetail(projectId);
+    }
+
+    @GetMapping("/projects/{projectId}/beats")
+    public List<ProjectDtos.BeatDetail> listBeats(@PathVariable Long projectId) {
+        return projectService.listBeats(projectId);
     }
 
     @PutMapping("/projects/{projectId}")
@@ -51,6 +62,20 @@ public class ProjectController {
         @RequestBody ProjectRequests.ProjectUpdate request
     ) {
         return projectService.updateProject(projectId, request);
+    }
+
+    @PostMapping("/projects/{projectId}/save")
+    public ProjectDtos.ProjectSummary saveProject(
+        @PathVariable Long projectId,
+        @RequestBody(required = false) ProjectRequests.ProjectSave request
+    ) {
+        return projectService.saveProject(projectId, request);
+    }
+
+    @DeleteMapping("/projects/{projectId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProject(@PathVariable Long projectId) {
+        projectService.deleteProject(projectId);
     }
 
     @PostMapping("/projects/{projectId}/beats")

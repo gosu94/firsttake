@@ -24,6 +24,11 @@ public final class ProjectRequests {
     ) {
     }
 
+    public record ProjectSave(
+        String name
+    ) {
+    }
+
     public record BeatCreate(
         Integer orderIndex,
         String scriptSentence,

@@ -25,6 +25,7 @@ import com.gosu.firsttake.domain.AppUser;
 import com.gosu.firsttake.domain.AssetType;
 import com.gosu.firsttake.domain.GeneratedAsset;
 import com.gosu.firsttake.domain.Project;
+import com.gosu.firsttake.domain.ProjectStatus;
 import com.gosu.firsttake.domain.SceneType;
 import com.gosu.firsttake.domain.TimelineBeat;
 import com.gosu.firsttake.repository.GeneratedAssetRepository;
@@ -90,7 +91,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectDtos.ProjectSummary> listProjects() {
         AppUser user = resolveCurrentUser();
-        return projectRepository.findByUserIdOrderByCreatedAtAsc(user.getId()).stream()
+        return projectRepository.findByUserIdAndStatusOrderByUpdatedAtDesc(user.getId(), ProjectStatus.SAVED).stream()
                 .map(this::toSummary)
                 .toList();
     }
@@ -101,6 +102,13 @@ public class ProjectService {
         List<TimelineBeat> beats = beatRepository.findByProjectIdOrderByOrderIndexAsc(projectId);
         List<ProjectDtos.BeatDetail> beatDetails = mapBeatsWithAssets(beats);
         return toDetail(project, beatDetails);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectDtos.BeatDetail> listBeats(Long projectId) {
+        Project project = getProjectForCurrentUser(projectId);
+        List<TimelineBeat> beats = beatRepository.findByProjectIdOrderByOrderIndexAsc(project.getId());
+        return mapBeatsWithAssets(beats);
     }
 
     @Transactional
@@ -114,8 +122,39 @@ public class ProjectService {
         project.setNarratorVoice(request.narratorVoice());
         project.setNarratorVoicePrompt(request.narratorVoicePrompt());
         project.setVisualStylePrompt(request.visualStylePrompt());
+        project.setStatus(ProjectStatus.SAVED);
         projectRepository.save(project);
         return toSummary(project);
+    }
+
+    @Transactional
+    public ProjectDtos.ProjectSummary createDraftProject() {
+        AppUser user = resolveCurrentUser();
+        Project project = new Project();
+        project.setUser(user);
+        project.setName("Untitled Draft");
+        project.setStatus(ProjectStatus.DRAFT);
+        projectRepository.save(project);
+        return toSummary(project);
+    }
+
+    @Transactional
+    public ProjectDtos.ProjectSummary saveProject(Long projectId, ProjectRequests.ProjectSave request) {
+        Project project = getProjectForCurrentUser(projectId);
+        if (request != null && request.name() != null && !request.name().isBlank()) {
+            project.setName(request.name());
+        } else if (project.getName() == null || project.getName().isBlank()) {
+            project.setName("Untitled Project");
+        }
+        project.setStatus(ProjectStatus.SAVED);
+        projectRepository.save(project);
+        return toSummary(project);
+    }
+
+    @Transactional
+    public void deleteProject(Long projectId) {
+        Project project = getProjectForCurrentUser(projectId);
+        projectRepository.delete(project);
     }
 
     @Transactional
@@ -201,7 +240,6 @@ public class ProjectService {
 
     @Transactional
     public void deleteBeat(Long beatId) {
-        assetRepository.deleteByBeatId(beatId);
         beatRepository.deleteById(beatId);
     }
 
@@ -233,9 +271,6 @@ public class ProjectService {
         List<ScriptBeat> beats = parseScript(result.output());
 
         List<TimelineBeat> existingBeats = beatRepository.findByProjectIdOrderByOrderIndexAsc(projectId);
-        for (TimelineBeat existingBeat : existingBeats) {
-            assetRepository.deleteByBeatId(existingBeat.getId());
-        }
         beatRepository.deleteByProjectId(projectId);
 
         List<TimelineBeat> saved = new ArrayList<>();
@@ -275,17 +310,6 @@ public class ProjectService {
                 .toList();
         String aspectRatio = request != null ? request.aspectRatio() : null;
         boolean generateNarration = request == null || request.generateNarration() == null || request.generateNarration();
-
-        for (BeatSnapshot beat : snapshots) {
-            if (generateNarration) {
-                assetRepository.deleteByBeatIdAndAssetType(beat.id(), AssetType.AUDIO);
-            }
-            if (beat.sceneType() == SceneType.IMAGE) {
-                assetRepository.deleteByBeatIdAndAssetType(beat.id(), AssetType.IMAGE);
-            } else {
-                assetRepository.deleteByBeatIdAndAssetType(beat.id(), AssetType.VIDEO);
-            }
-        }
 
         List<CompletableFuture<GeneratedAssetResult>> futures = new ArrayList<>();
         GeneratedAssetResult audioResult = generateNarration ? generateCombinedAudio(project, snapshots) : null;
@@ -457,8 +481,10 @@ public class ProjectService {
                 project.getNarratorVoice(),
                 project.getNarratorVoicePrompt(),
                 project.getVisualStylePrompt(),
+                project.getStatus().name(),
                 project.getCreatedAt(),
-                project.getUpdatedAt()
+                project.getUpdatedAt(),
+                project.getLastOpenedAt()
         );
     }
 
@@ -471,8 +497,10 @@ public class ProjectService {
                 project.getNarratorVoice(),
                 project.getNarratorVoicePrompt(),
                 project.getVisualStylePrompt(),
+                project.getStatus().name(),
                 project.getCreatedAt(),
                 project.getUpdatedAt(),
+                project.getLastOpenedAt(),
                 beats
         );
     }

@@ -8,9 +8,10 @@ import com.gosu.firsttake.domain.TimelineBeat;
 import com.gosu.firsttake.repository.GeneratedAssetRepository;
 import com.gosu.firsttake.repository.ProjectRepository;
 import com.gosu.firsttake.repository.TimelineBeatRepository;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -19,11 +20,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.extern.slf4j.Slf4j;
@@ -58,32 +59,66 @@ public class ExportService {
     public void exportProject(Long projectId, HttpServletResponse response) throws IOException {
         Project project = getProjectForDefaultUser(projectId);
         List<TimelineBeat> beats = beatRepository.findByProjectIdOrderByOrderIndexAsc(projectId);
-        List<Long> beatIds = beats.stream().map(TimelineBeat::getId).toList();
-        List<GeneratedAsset> assets = beatIds.isEmpty() ? List.of() : assetRepository.findByBeatIdIn(beatIds);
-        Map<Long, List<GeneratedAsset>> assetsByBeat = new HashMap<>();
-        for (GeneratedAsset asset : assets) {
-            assetsByBeat.computeIfAbsent(asset.getBeat().getId(), key -> new ArrayList<>()).add(asset);
-        }
-        for (List<GeneratedAsset> assetList : assetsByBeat.values()) {
-            assetList.sort(Comparator.comparing(GeneratedAsset::getCreatedAt));
-        }
+        List<GeneratedAsset> assets = assetRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
+        assets = assets.stream().sorted(Comparator.comparing(GeneratedAsset::getCreatedAt)).toList();
+        Map<Long, TimelineBeat> beatMap = beats.stream()
+            .collect(Collectors.toMap(TimelineBeat::getId, beat -> beat));
 
         response.setContentType("application/zip");
         response.setHeader("Content-Disposition", "attachment; filename=\"project-" + projectId + ".zip\"");
 
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(response.getOutputStream())) {
+            JsonArray manifestBeats = new JsonArray();
             for (TimelineBeat beat : beats) {
-                List<GeneratedAsset> beatAssets = assetsByBeat.getOrDefault(beat.getId(), List.of());
-                for (GeneratedAsset asset : beatAssets) {
-                    writeAsset(zipOutputStream, beat, asset);
-                }
+                JsonObject beatJson = new JsonObject();
+                beatJson.addProperty("id", beat.getId());
+                beatJson.addProperty("orderIndex", beat.getOrderIndex());
+                beatJson.addProperty("scriptSentence", beat.getScriptSentence());
+                beatJson.addProperty("scenePrompt", beat.getScenePrompt());
+                beatJson.addProperty("sceneType", beat.getSceneType().name());
+                manifestBeats.add(beatJson);
             }
+
+            JsonArray manifestAssets = new JsonArray();
+            for (GeneratedAsset asset : assets) {
+                TimelineBeat beat = asset.getBeat() != null ? beatMap.get(asset.getBeat().getId()) : null;
+                String filename = beat != null ? buildAssetFilename(beat, asset, true) : buildOrphanAssetFilename(asset);
+                writeAsset(zipOutputStream, beat, asset, filename);
+
+                JsonObject assetJson = new JsonObject();
+                assetJson.addProperty("id", asset.getId());
+                assetJson.addProperty("assetType", asset.getAssetType().name());
+                assetJson.addProperty("beatId", beat != null ? beat.getId() : null);
+                assetJson.addProperty("beatOrderIndex", beat != null ? beat.getOrderIndex() : null);
+                assetJson.addProperty("url", asset.getUrl());
+                assetJson.addProperty("provider", asset.getProvider());
+                assetJson.addProperty("mimeType", asset.getMimeType());
+                assetJson.addProperty("durationSeconds", asset.getDurationSeconds());
+                assetJson.addProperty("originalPrompt", asset.getOriginalPrompt());
+                assetJson.addProperty("createdAt", asset.getCreatedAt() != null ? asset.getCreatedAt().toString() : null);
+                assetJson.addProperty("filename", filename);
+                manifestAssets.add(assetJson);
+            }
+
+            JsonObject manifest = new JsonObject();
+            manifest.addProperty("projectId", project.getId());
+            manifest.addProperty("projectName", project.getName());
+            manifest.add("beats", manifestBeats);
+            manifest.add("assets", manifestAssets);
+            ZipEntry manifestEntry = new ZipEntry("manifest.json");
+            zipOutputStream.putNextEntry(manifestEntry);
+            zipOutputStream.write(manifest.toString().getBytes(StandardCharsets.UTF_8));
+            zipOutputStream.closeEntry();
             zipOutputStream.finish();
         }
     }
 
-    private void writeAsset(ZipOutputStream zipOutputStream, TimelineBeat beat, GeneratedAsset asset) throws IOException {
-        String filename = buildAssetFilename(beat, asset, true);
+    private void writeAsset(
+        ZipOutputStream zipOutputStream,
+        TimelineBeat beat,
+        GeneratedAsset asset,
+        String filename
+    ) throws IOException {
         try {
             byte[] data = fetchAssetBytes(asset);
             if (data == null) {
@@ -101,7 +136,9 @@ public class ExportService {
     }
 
     private void writeErrorFile(ZipOutputStream zipOutputStream, TimelineBeat beat, GeneratedAsset asset, String message) throws IOException {
-        String filename = "beat-" + beat.getOrderIndex() + "-asset-" + asset.getId() + "-error.txt";
+        String filename = beat != null
+            ? "beat-" + beat.getOrderIndex() + "-asset-" + asset.getId() + "-error.txt"
+            : "unassigned/asset-" + asset.getId() + "-error.txt";
         ZipEntry entry = new ZipEntry(filename);
         zipOutputStream.putNextEntry(entry);
         String payload = "Failed to download asset " + asset.getId() + ": " + message;
@@ -147,6 +184,11 @@ public class ExportService {
         };
         String extension = includeExtension ? resolveExtension(asset) : "";
         return "beat-" + beat.getOrderIndex() + "-" + stem + "-" + asset.getId() + extension;
+    }
+
+    private String buildOrphanAssetFilename(GeneratedAsset asset) {
+        String extension = resolveExtension(asset);
+        return "unassigned/" + asset.getAssetType().name().toLowerCase(Locale.US) + "-" + asset.getId() + extension;
     }
 
     private String resolveExtension(GeneratedAsset asset) {

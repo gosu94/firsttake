@@ -2,6 +2,8 @@ package com.gosu.firsttake.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -40,11 +42,17 @@ public class Project {
     @Column(columnDefinition = "TEXT")
     private String visualStylePrompt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "VARCHAR(32) DEFAULT 'DRAFT'")
+    private ProjectStatus status = ProjectStatus.DRAFT;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     @Column(nullable = false)
     private Instant updatedAt;
+
+    private Instant lastOpenedAt;
 
     @PrePersist
     void onCreate() {
@@ -126,6 +134,14 @@ public class Project {
         this.visualStylePrompt = visualStylePrompt;
     }
 
+    public ProjectStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ProjectStatus status) {
+        this.status = status;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -140,5 +156,13 @@ public class Project {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Instant getLastOpenedAt() {
+        return lastOpenedAt;
+    }
+
+    public void setLastOpenedAt(Instant lastOpenedAt) {
+        this.lastOpenedAt = lastOpenedAt;
     }
 }

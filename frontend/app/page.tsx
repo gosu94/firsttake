@@ -36,6 +36,10 @@ export default function Page() {
     const [ctaStyle, setCtaStyle] = useState('soft');
     const [generateNarration, setGenerateNarration] = useState(true);
     const [projectId, setProjectId] = useState<number | null>(null);
+    const [projectName, setProjectName] = useState('');
+    const [projectStatus, setProjectStatus] = useState<ProjectDetail['status']>('DRAFT');
+    const [savedProjects, setSavedProjects] = useState<ProjectSummary[]>([]);
+    const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
     const [beats, setBeats] = useState<Beat[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isGeneratingScript, setIsGeneratingScript] = useState(false);
@@ -61,15 +65,10 @@ export default function Page() {
         const load = async () => {
             try {
                 setIsLoading(true);
+                const sessionProject = await fetchJson<ProjectDetail>('/api/session/project');
+                applyProjectDetail(sessionProject);
                 const projects = await fetchJson<ProjectSummary[]>('/api/projects');
-                if (projects.length === 0) {
-                    setProjectId(null);
-                    setBeats([]);
-                    return;
-                }
-                const first = projects[0];
-                setProjectId(first.id);
-                await loadProject(first.id);
+                setSavedProjects(projects);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to load project.');
             } finally {
@@ -79,8 +78,10 @@ export default function Page() {
         void load();
     }, []);
 
-    const loadProject = async (id: number) => {
-        const detail = await fetchJson<ProjectDetail>(`/api/projects/${id}`);
+    const applyProjectDetail = (detail: ProjectDetail) => {
+        setProjectId(detail.id);
+        setProjectName(detail.name ?? '');
+        setProjectStatus(detail.status ?? 'DRAFT');
         setPrompt(detail.generalPrompt ?? '');
         setTone(detail.tone ?? 'professional');
         setNarrator(detail.narratorVoice ?? 'alloy');
@@ -92,6 +93,11 @@ export default function Page() {
         setNarratorPrompt(selectedPreset.ttsPrompt);
         setVisualStylePrompt(detail.visualStylePrompt ?? '');
         setBeats(detail.beats ?? []);
+    };
+
+    const loadProject = async (id: number) => {
+        const detail = await fetchJson<ProjectDetail>(`/api/projects/${id}`);
+        applyProjectDetail(detail);
     };
 
     const updateProject = async (updates: Partial<ProjectDetail>) => {
@@ -109,6 +115,91 @@ export default function Page() {
                 visualStylePrompt: updates.visualStylePrompt,
             }),
         });
+    };
+
+    const refreshSavedProjects = async () => {
+        const projects = await fetchJson<ProjectSummary[]>('/api/projects');
+        setSavedProjects(projects);
+    };
+
+    const handleNewProject = async () => {
+        setError(null);
+        try {
+            const detail = await fetchJson<ProjectDetail>('/api/session/project/new', { method: 'POST' });
+            applyProjectDetail(detail);
+            setSelectedProjectId(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to create project.');
+        }
+    };
+
+    const handleSaveProject = async () => {
+        if (!projectLoaded) {
+            return;
+        }
+        setError(null);
+        try {
+            const saved = await fetchJson<ProjectSummary>(`/api/projects/${projectId}/save`, {
+                method: 'POST',
+                body: JSON.stringify({ name: projectName }),
+            });
+            setProjectName(saved.name ?? projectName);
+            setProjectStatus('SAVED');
+            await refreshSavedProjects();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to save project.');
+        }
+    };
+
+    const handleRenameProject = async () => {
+        if (!projectLoaded) {
+            return;
+        }
+        setError(null);
+        try {
+            await fetchJson<ProjectSummary>(`/api/projects/${projectId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ name: projectName }),
+            });
+            await refreshSavedProjects();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to rename project.');
+        }
+    };
+
+    const handleDeleteProject = async () => {
+        if (!projectLoaded) {
+            return;
+        }
+        setError(null);
+        try {
+            const response = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' });
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(message || 'Failed to delete project.');
+            }
+            await refreshSavedProjects();
+            const detail = await fetchJson<ProjectDetail>('/api/session/project/new', { method: 'POST' });
+            applyProjectDetail(detail);
+            setSelectedProjectId(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to delete project.');
+        }
+    };
+
+    const handleLoadProject = async () => {
+        if (!selectedProjectId) {
+            return;
+        }
+        setError(null);
+        try {
+            const detail = await fetchJson<ProjectDetail>(`/api/session/project/select/${selectedProjectId}`, {
+                method: 'POST',
+            });
+            applyProjectDetail(detail);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to load project.');
+        }
     };
 
     const updateBeat = async (beatId: number, updates: Partial<Beat>) => {
@@ -480,72 +571,6 @@ export default function Page() {
 
     return (
         <div className="min-h-screen blueprint-grid relative overflow-hidden" data-oid="sn:jvm8">
-            <nav
-                className="glass-nav px-6 py-4 flex justify-between items-center sticky top-0 z-50 animate-slide-in-up"
-                data-oid=":949wnf"
-            >
-                <div className="flex items-center gap-3 text-white font-bold text-2xl tracking-tight text-glow" data-oid="8-c1j3u">
-                    <img
-                        src="/favicon.ico"
-                        alt="FirstTake AI logo"
-                        className="h-10 w-10"
-                    />
-                    <span>
-                        FirstTake <span className="text-purple-400">AI</span>
-                    </span>
-                </div>
-                <div className="flex items-center space-x-4" data-oid="mpduif4">
-                    <button
-                        className="p-2.5 text-gray-300 hover:text-white transition-all duration-300 rounded-lg hover:bg-white/10 backdrop-blur-sm"
-                        data-oid="wj57jec"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            data-oid="qydf_l2"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                data-oid="-r_4mym"
-                            />
-                        </svg>
-                    </button>
-                    <button
-                        className="p-2.5 text-gray-300 hover:text-white transition-all duration-300 rounded-lg hover:bg-white/10 backdrop-blur-sm"
-                        data-oid="_he_i7v"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            data-oid="g:s6gku"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                                data-oid="6a_tb0."
-                            />
-
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                data-oid="66kw5p5"
-                            />
-                        </svg>
-                    </button>
-                </div>
-            </nav>
-
             <div
                 className="flex min-h-[calc(100vh-80px)] p-4 md:p-6 gap-6 flex-col lg:flex-row animate-fade-in"
                 data-oid="_0-3vjy"
@@ -588,6 +613,10 @@ export default function Page() {
                     onGenerateScript={handleGenerateScript}
                 />
                 <TimelinePanel
+                    projectName={projectName}
+                    projectStatus={projectStatus ?? 'DRAFT'}
+                    savedProjects={savedProjects}
+                    selectedProjectId={selectedProjectId}
                     beats={beats}
                     isLoading={isLoading}
                     projectLoaded={projectLoaded}
@@ -604,6 +633,13 @@ export default function Page() {
                     onUpdateBeatLocal={updateBeatLocal}
                     onUpdateBeat={updateBeat}
                     setBeatRef={setBeatRef}
+                    onProjectNameChange={setProjectName}
+                    onSelectProjectId={setSelectedProjectId}
+                    onNewProject={() => void handleNewProject()}
+                    onSaveProject={() => void handleSaveProject()}
+                    onRenameProject={() => void handleRenameProject()}
+                    onDeleteProject={() => void handleDeleteProject()}
+                    onLoadProject={() => void handleLoadProject()}
                     footer={(
                         <AssetsFooter
                             projectLoaded={projectLoaded}

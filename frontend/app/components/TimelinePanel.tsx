@@ -1,8 +1,12 @@
 import type { ReactNode } from 'react';
-import type { Beat } from '../types';
+import type { Beat, ProjectSummary } from '../types';
 import { BeatRow } from './BeatRow';
 
 interface TimelinePanelProps {
+    projectName: string;
+    projectStatus?: 'DRAFT' | 'SAVED' | 'ARCHIVED';
+    savedProjects: ProjectSummary[];
+    selectedProjectId: number | null;
     beats: Beat[];
     isLoading: boolean;
     projectLoaded: boolean;
@@ -20,9 +24,20 @@ interface TimelinePanelProps {
     onUpdateBeatLocal: (beatId: number, updates: Partial<Beat>) => void;
     onUpdateBeat: (beatId: number, updates: Partial<Beat>) => void;
     setBeatRef: (beatId: number, node: HTMLDivElement | null) => void;
+    onProjectNameChange: (value: string) => void;
+    onSelectProjectId: (value: number | null) => void;
+    onNewProject: () => void;
+    onSaveProject: () => void;
+    onRenameProject: () => void;
+    onDeleteProject: () => void;
+    onLoadProject: () => void;
 }
 
 export function TimelinePanel({
+    projectName,
+    projectStatus,
+    savedProjects,
+    selectedProjectId,
     beats,
     isLoading,
     projectLoaded,
@@ -40,6 +55,13 @@ export function TimelinePanel({
     onUpdateBeatLocal,
     onUpdateBeat,
     setBeatRef,
+    onProjectNameChange,
+    onSelectProjectId,
+    onNewProject,
+    onSaveProject,
+    onRenameProject,
+    onDeleteProject,
+    onLoadProject,
 }: TimelinePanelProps) {
     return (
         <div
@@ -47,10 +69,83 @@ export function TimelinePanel({
             style={{ animationDelay: '0.2s' }}
             data-oid="adq0q6s"
         >
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-white text-2xl font-bold tracking-tight" data-oid="ik41s-8">
-                    Script Timeline
-                </h2>
+            <div className="flex flex-col gap-4 mb-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <h2 className="text-white text-2xl font-bold tracking-tight" data-oid="ik41s-8">
+                        Script Timeline
+                    </h2>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={onNewProject}
+                            title="New draft"
+                            className="h-9 w-9 rounded-full border border-white/10 text-gray-200 hover:bg-white/10 flex items-center justify-center"
+                        >
+                            +
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onSaveProject}
+                            title="Save project"
+                            className="h-9 w-9 rounded-full border border-white/10 text-gray-200 hover:bg-white/10 flex items-center justify-center"
+                        >
+                            ⭳
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onRenameProject}
+                            title="Rename project"
+                            className="h-9 w-9 rounded-full border border-white/10 text-gray-200 hover:bg-white/10 flex items-center justify-center"
+                        >
+                            ✎
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onDeleteProject}
+                            title="Delete project"
+                            className="h-9 w-9 rounded-full border border-rose-400/50 text-rose-200 hover:bg-rose-500/20 flex items-center justify-center"
+                        >
+                            🗑
+                        </button>
+                    </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <input
+                            value={projectName}
+                            onChange={(e) => onProjectNameChange(e.target.value)}
+                            className="input-glossy min-w-[220px]"
+                            placeholder="Untitled project"
+                        />
+                        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-gray-300">
+                            {projectStatus ?? 'DRAFT'}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <select
+                            className="select-glossy min-w-[220px]"
+                            value={selectedProjectId ?? ''}
+                            onChange={(e) =>
+                                onSelectProjectId(e.target.value ? Number(e.target.value) : null)
+                            }
+                        >
+                            <option value="">Select saved project</option>
+                            {savedProjects.map((project) => (
+                                <option key={project.id} value={project.id}>
+                                    {project.name}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            type="button"
+                            onClick={onLoadProject}
+                            title="Load selected project"
+                            className="h-9 w-9 rounded-full border border-white/10 text-gray-200 hover:bg-white/10 flex items-center justify-center"
+                        >
+                            ↻
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {isLoading ? (
