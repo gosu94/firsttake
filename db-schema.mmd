@@ -1,0 +1,132 @@
+erDiagram
+    APP_USER {
+        BIGSERIAL id PK
+        VARCHAR email
+        BOOLEAN email_verified
+        VARCHAR password_hash
+        VARCHAR display_name
+        BIGINT coin_balance
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+        TIMESTAMP last_login_at
+    }
+
+    USER_AUTH_PROVIDER {
+        BIGSERIAL id PK
+        BIGINT user_id FK
+        VARCHAR provider
+        VARCHAR provider_subject
+        VARCHAR provider_email
+        TIMESTAMP created_at
+    }
+
+    EMAIL_VERIFICATION_TOKEN {
+        BIGSERIAL id PK
+        BIGINT user_id FK
+        VARCHAR token
+        TIMESTAMP expires_at
+        TIMESTAMP used_at
+        TIMESTAMP created_at
+    }
+
+    PASSWORD_RESET_TOKEN {
+        BIGSERIAL id PK
+        BIGINT user_id FK
+        VARCHAR token
+        TIMESTAMP expires_at
+        TIMESTAMP used_at
+        TIMESTAMP created_at
+    }
+
+    USER_SESSION {
+        BIGSERIAL id PK
+        BIGINT user_id FK
+        VARCHAR refresh_token
+        TIMESTAMP expires_at
+        TIMESTAMP revoked_at
+        TIMESTAMP created_at
+    }
+
+    SUBSCRIPTION {
+        BIGSERIAL id PK
+        BIGINT user_id FK
+        VARCHAR plan
+        VARCHAR status
+        TIMESTAMP current_period_start
+        TIMESTAMP current_period_end
+        VARCHAR provider
+        VARCHAR provider_subscription_id
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    PROJECT {
+        BIGSERIAL id PK
+        BIGINT user_id FK
+        VARCHAR name
+        TEXT general_prompt
+        VARCHAR tone
+        VARCHAR narrator_voice
+        TEXT narrator_voice_prompt
+        TEXT visual_style_prompt
+        VARCHAR status
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+        TIMESTAMP last_opened_at
+    }
+
+    TIMELINE_BEAT {
+        BIGSERIAL id PK
+        BIGINT project_id FK
+        INT order_index
+        TEXT script_sentence
+        TEXT scene_prompt
+        VARCHAR scene_type
+        BOOLEAN selected_for_generation
+        BOOLEAN video_generate_audio
+        VARCHAR video_model
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    GENERATED_ASSET {
+        BIGSERIAL id PK
+        BIGINT beat_id FK
+        BIGINT project_id FK
+        BIGINT created_by_user_id FK
+        VARCHAR asset_type
+        TEXT url
+        VARCHAR provider
+        VARCHAR mime_type
+        DOUBLE duration_seconds
+        TEXT original_prompt
+        TIMESTAMP created_at
+    }
+
+    COIN_TRANSACTION {
+        BIGSERIAL id PK
+        BIGINT user_id FK
+        VARCHAR type
+        BIGINT amount
+        VARCHAR reason
+        BIGINT related_project_id FK
+        BIGINT related_asset_id FK
+        TIMESTAMP created_at
+    }
+
+    APP_USER ||--o{ USER_AUTH_PROVIDER : has
+    APP_USER ||--o{ EMAIL_VERIFICATION_TOKEN : has
+    APP_USER ||--o{ PASSWORD_RESET_TOKEN : has
+    APP_USER ||--o{ USER_SESSION : has
+    APP_USER ||--o{ SUBSCRIPTION : has
+    APP_USER ||--o{ PROJECT : owns
+    APP_USER ||--o{ GENERATED_ASSET : creates
+    APP_USER ||--o{ COIN_TRANSACTION : logs
+
+    PROJECT ||--o{ TIMELINE_BEAT : contains
+    PROJECT ||--o{ GENERATED_ASSET : assets
+    PROJECT ||--o{ COIN_TRANSACTION : related
+
+    TIMELINE_BEAT ||--o{ GENERATED_ASSET : beat_assets
+
+    GENERATED_ASSET ||--o{ COIN_TRANSACTION : related
