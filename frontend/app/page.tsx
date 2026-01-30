@@ -223,7 +223,7 @@ export default function Page() {
         );
     };
 
-    const handleGenerateScript = async () => {
+    const generateScript = async () => {
         if (!projectLoaded) {
             return;
         }
@@ -249,6 +249,10 @@ export default function Page() {
         } finally {
             setIsGeneratingScript(false);
         }
+    };
+
+    const handleGenerateScript = async () => {
+        await generateScript();
     };
 
     const handleGenerateAssets = async () => {
